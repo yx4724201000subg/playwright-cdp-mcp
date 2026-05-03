@@ -1,6 +1,6 @@
 {
-  "name": "@playwright/mcp",
-  "version": "0.0.73",
+  "name": "@dingmenghua/playwright-mcp-cdp-session",
+  "version": "0.0.73-cdp.0",
   "description": "Playwright Tools for MCP",
   "repository": {
     "type": "git",
