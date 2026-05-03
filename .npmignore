@@ -8,3 +8,5 @@
 !patches/**
 !scripts/
 !scripts/**
+!docs/
+!docs/**

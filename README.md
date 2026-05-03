@@ -2,6 +2,10 @@
 
 A Model Context Protocol (MCP) server that provides browser automation capabilities using [Playwright](https://playwright.dev). This server enables LLMs to interact with web pages through structured accessibility snapshots, bypassing the need for screenshots or visually-tuned models.
 
+### Dynamic CDP sessions fork
+
+This fork is published as `@dingmenghua/playwright-mcp-cdp-session` and adds per-call `browserSession` support so one MCP server can control multiple CDP endpoints at the same time. See [Dynamic CDP Browser Sessions](docs/dynamic-cdp-sessions.md) for installation, tool-call examples, validation scripts, and publishing notes.
+
 ### Playwright MCP vs Playwright CLI
 
 This package provides MCP interface into Playwright. If you are using a **coding agent**, you might benefit from using the [CLI+SKILLS](https://github.com/microsoft/playwright-cli) instead.
