@@ -23,6 +23,7 @@
     "wtest": "playwright test --project=webkit",
     "dtest": "MCP_IN_DOCKER=1 playwright test --project=chromium-docker",
     "build": "echo OK",
+    "postinstall": "node patches/patch-playwright-core-mcp-browser-session.js",
     "npm-publish": "npm run lint && npm run test && npm publish",
     "docker-build": "docker build --no-cache -t playwright-mcp-dev:latest .",
     "docker-rm": "docker rm playwright-mcp-dev",
@@ -37,8 +38,10 @@
     }
   },
   "dependencies": {
+    "@openai/agents": "^0.8.5",
     "playwright": "1.60.0-alpha-1777669338000",
-    "playwright-core": "1.60.0-alpha-1777669338000"
+    "playwright-core": "1.60.0-alpha-1777669338000",
+    "zod": "^4.4.2"
   },
   "devDependencies": {
     "@modelcontextprotocol/sdk": "^1.25.2",
