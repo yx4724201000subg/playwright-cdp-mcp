@@ -14,7 +14,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const bundlePath = path.join(__dirname, '..', 'node_modules', 'playwright-core', 'lib', 'coreBundle.js');
+const bundlePath = require.resolve('playwright-core/lib/coreBundle');
 
 function replaceOnce(source, from, to, label) {
   if (source.includes(to))
