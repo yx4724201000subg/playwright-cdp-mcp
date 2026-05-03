@@ -189,6 +189,53 @@ On the first call for each id, include cdpEndpoint. Later calls may pass only id
 
 This avoids accidental calls to the default browser context.
 
+## OpenAI Agents SDK Integration
+
+When using `@openai/agents`, configure the MCP server with `MCPServerStdio`.
+
+`npx` may take more than the default MCP request timeout on its first run because it has to resolve, download, install, and run the package. Set `clientSessionTimeoutSeconds` high enough for cold starts. A value around 120 seconds is a practical default for server environments.
+
+```js
+import { Agent, MCPServerStdio, run } from '@openai/agents';
+
+const playwrightMcp = new MCPServerStdio({
+  name: 'playwright-cdp-session',
+  command: 'npx',
+  args: ['-y', '@dingmenghua/playwright-mcp-cdp-session@latest', '--headless'],
+  clientSessionTimeoutSeconds: 120,
+  cacheToolsList: false,
+});
+
+await playwrightMcp.connect();
+
+const agent = new Agent({
+  name: 'Browser agent',
+  instructions: [
+    'Always include browserSession when calling Playwright MCP tools.',
+    'On the first call for a session id, include cdpEndpoint.',
+    'On later calls, pass only browserSession.id.',
+  ].join('\n'),
+  mcpServers: [playwrightMcp],
+});
+
+const result = await run(agent, 'Use browserSession id "chrome-a" with CDP endpoint http://localhost:9222.');
+console.log(result.finalOutput);
+
+await playwrightMcp.close();
+```
+
+If you do not increase the timeout, cold `npx` starts can fail with an MCP timeout similar to:
+
+```text
+MCP error -32001: Request timed out
+```
+
+You can also prewarm the package on a host:
+
+```bash
+npx -y @dingmenghua/playwright-mcp-cdp-session@latest --help
+```
+
 ## Validation Scripts
 
 This repo includes two validation scripts.
