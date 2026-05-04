@@ -56,7 +56,7 @@ Temporary/simple configuration:
 ```json
 {
   "mcpServers": {
-    "playwright": {
+    "playwright-cdp": {
       "command": "npx",
       "args": [
         "-y",
@@ -97,7 +97,7 @@ Minimal `npx` configuration:
 ```json
 {
   "mcpServers": {
-    "playwright": {
+    "playwright-cdp": {
       "command": "npx",
       "args": [
         "@dingmenghua/playwright-mcp-cdp-session@latest"
@@ -112,7 +112,7 @@ For clients that require `-y`:
 ```json
 {
   "mcpServers": {
-    "playwright": {
+    "playwright-cdp": {
       "command": "npx",
       "args": [
         "-y",
@@ -128,7 +128,7 @@ You can still pass normal Playwright MCP startup options:
 ```json
 {
   "mcpServers": {
-    "playwright": {
+    "playwright-cdp": {
       "command": "npx",
       "args": [
         "@dingmenghua/playwright-mcp-cdp-session@latest",
@@ -292,7 +292,7 @@ MCP config after global install:
 ```json
 {
   "mcpServers": {
-    "playwright": {
+    "playwright-cdp": {
       "command": "playwright-mcp-cdp",
       "args": ["--headless"]
     }
@@ -311,7 +311,7 @@ MCP config after local install:
 ```json
 {
   "mcpServers": {
-    "playwright": {
+    "playwright-cdp": {
       "command": "node",
       "args": [
         "node_modules/@dingmenghua/playwright-mcp-cdp-session/cli.js",
@@ -378,7 +378,7 @@ tmpdir=$(mktemp -d)
 cd "$tmpdir"
 npm init -y
 npm install @dingmenghua/playwright-mcp-cdp-session@latest
-node node_modules/@dingmenghua/playwright-mcp-cdp-session/cli.js --help
+./node_modules/.bin/playwright-mcp-cdp --help
 ```
 
 NPM does not allow overwriting an already published version. Bump the suffix for fixes:
