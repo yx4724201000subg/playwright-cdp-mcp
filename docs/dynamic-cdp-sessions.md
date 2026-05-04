@@ -73,25 +73,21 @@ This requires no pre-install step. It is convenient for quick setup, but the fir
 Codex CLI add command:
 
 ```bash
-codex mcp add playwright -- npx -y @dingmenghua/playwright-mcp-cdp-session@latest --headless
+codex mcp add playwright-cdp -- npx -y @dingmenghua/playwright-mcp-cdp-session@latest --headless
 ```
 
 Codex config template:
 
 ```toml
-[mcp_servers.playwright]
+[mcp_servers.playwright-cdp]
 command = "npx"
-args = [
-  "-y",
-  "@dingmenghua/playwright-mcp-cdp-session@latest",
-  "--headless",
-]
+args = ["-y", "@dingmenghua/playwright-mcp-cdp-session@latest", "--headless"]
 ```
 
 If you installed the package globally, use this Codex config instead:
 
 ```toml
-[mcp_servers.playwright]
+[mcp_servers.playwright-cdp]
 command = "playwright-mcp"
 args = ["--headless"]
 ```
