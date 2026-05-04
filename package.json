@@ -1,6 +1,6 @@
 {
   "name": "@dingmenghua/playwright-mcp-cdp-session",
-  "version": "0.0.73-cdp.1",
+  "version": "0.0.73-cdp.2",
   "description": "Playwright Tools for MCP",
   "repository": {
     "type": "git",
@@ -14,7 +14,7 @@
     "name": "Microsoft Corporation"
   },
   "license": "Apache-2.0",
-  "mcpName": "io.github.microsoft/playwright-mcp",
+  "mcpName": "io.github.dingmenghua/playwright-mcp-cdp-session",
   "scripts": {
     "lint": "node update-readme.js",
     "test": "playwright test",
@@ -49,6 +49,6 @@
     "@types/node": "^24.3.0"
   },
   "bin": {
-    "playwright-mcp": "cli.js"
+    "playwright-mcp-cdp": "cli.js"
   }
 }

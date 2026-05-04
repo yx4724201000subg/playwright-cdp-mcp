@@ -1,17 +1,17 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.microsoft/playwright-mcp",
+  "name": "io.github.dingmenghua/playwright-mcp-cdp-session",
   "description": "Playwright Tools for MCP",
   "repository": {
-    "url": "https://github.com/microsoft/playwright-mcp",
+    "url": "https://github.com/yx4724201000subg/playwright-mcp",
     "source": "github"
   },
-  "version": "0.0.73",
+  "version": "0.0.73-cdp.2",
   "packages": [
     {
       "registryType": "npm",
-      "identifier": "@playwright/mcp",
-      "version": "0.0.73",
+      "identifier": "@dingmenghua/playwright-mcp-cdp-session",
+      "version": "0.0.73-cdp.2",
       "transport": {
         "type": "stdio"
       }

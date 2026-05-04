@@ -11,7 +11,7 @@ npx @dingmenghua/playwright-mcp-cdp-session@latest
 The current published version is:
 
 ```text
-@dingmenghua/playwright-mcp-cdp-session@0.0.73-cdp.1
+@dingmenghua/playwright-mcp-cdp-session@0.0.73-cdp.2
 ```
 
 ## What Changed
@@ -88,7 +88,7 @@ If you installed the package globally, use this Codex config instead:
 
 ```toml
 [mcp_servers.playwright-cdp]
-command = "playwright-mcp"
+command = "playwright-mcp-cdp"
 args = ["--headless"]
 ```
 
@@ -293,7 +293,7 @@ MCP config after global install:
 {
   "mcpServers": {
     "playwright": {
-      "command": "playwright-mcp",
+      "command": "playwright-mcp-cdp",
       "args": ["--headless"]
     }
   }
@@ -384,8 +384,8 @@ node node_modules/@dingmenghua/playwright-mcp-cdp-session/cli.js --help
 NPM does not allow overwriting an already published version. Bump the suffix for fixes:
 
 ```text
-0.0.73-cdp.1
 0.0.73-cdp.2
+0.0.73-cdp.3
 ```
 
 Use an npm token with package write permission and `bypass_2fa: true` for server-side publishing.
