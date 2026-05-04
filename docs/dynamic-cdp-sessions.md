@@ -70,6 +70,32 @@ Temporary/simple configuration:
 
 This requires no pre-install step. It is convenient for quick setup, but the first startup may be slower because `npx` can download and install the package before the MCP server starts.
 
+Codex CLI add command:
+
+```bash
+codex mcp add playwright -- npx -y @dingmenghua/playwright-mcp-cdp-session@latest --headless
+```
+
+Codex config template:
+
+```toml
+[mcp_servers.playwright]
+command = "npx"
+args = [
+  "-y",
+  "@dingmenghua/playwright-mcp-cdp-session@latest",
+  "--headless",
+]
+```
+
+If you installed the package globally, use this Codex config instead:
+
+```toml
+[mcp_servers.playwright]
+command = "playwright-mcp"
+args = ["--headless"]
+```
+
 Minimal `npx` configuration:
 
 ```json
