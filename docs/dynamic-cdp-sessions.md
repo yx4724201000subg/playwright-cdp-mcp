@@ -236,6 +236,51 @@ You can also prewarm the package on a host:
 npx -y @dingmenghua/playwright-mcp-cdp-session@latest --help
 ```
 
+For long-running servers, prefer installing the package ahead of time instead of relying on `npx @latest` during MCP startup.
+
+Global install:
+
+```bash
+npm install -g @dingmenghua/playwright-mcp-cdp-session@latest
+```
+
+MCP config after global install:
+
+```json
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "playwright-mcp",
+      "args": ["--headless"]
+    }
+  }
+}
+```
+
+Project-local install:
+
+```bash
+npm install @dingmenghua/playwright-mcp-cdp-session@latest
+```
+
+MCP config after local install:
+
+```json
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "node",
+      "args": [
+        "node_modules/@dingmenghua/playwright-mcp-cdp-session/cli.js",
+        "--headless"
+      ]
+    }
+  }
+}
+```
+
+Installed-package startup avoids the `npx` cold-start download path and is more predictable in production.
+
 ## Validation Scripts
 
 This repo includes two validation scripts.
