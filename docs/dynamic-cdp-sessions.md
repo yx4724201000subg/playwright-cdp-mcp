@@ -76,6 +76,12 @@ Codex CLI add command:
 codex mcp add playwright-cdp -- npx -y @dingmenghua/playwright-mcp-cdp-session@latest --headless
 ```
 
+Optional prewarm command for machines that use the `npx` configuration:
+
+```bash
+npx -y @dingmenghua/playwright-mcp-cdp-session@latest --help
+```
+
 Codex config template:
 
 ```toml
