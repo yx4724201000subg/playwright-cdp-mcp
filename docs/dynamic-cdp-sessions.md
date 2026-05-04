@@ -51,6 +51,27 @@ Internally the MCP server keeps a map from session id to CDP browser/context. Ea
 
 Use this package instead of upstream `@playwright/mcp`:
 
+Temporary/simple configuration:
+
+```json
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@dingmenghua/playwright-mcp-cdp-session@latest",
+        "--headless"
+      ]
+    }
+  }
+}
+```
+
+This requires no pre-install step. It is convenient for quick setup, but the first startup may be slower because `npx` can download and install the package before the MCP server starts.
+
+Minimal `npx` configuration:
+
 ```json
 {
   "mcpServers": {
