@@ -2,6 +2,10 @@
 
 This fork publishes a patched Playwright MCP package that lets one MCP server control multiple Chromium browsers over different CDP endpoints.
 
+The server can start without a locally installed Chrome/Chromium. In dynamic session mode it will wait for per-call `browserSession.cdpEndpoint` values and connect lazily when the first tool call for that session arrives.
+
+This means the package no longer needs a local browser just to boot the MCP server. A local Chrome/Chromium is only relevant if you intentionally use the legacy default browser flow instead of dynamic CDP sessions.
+
 Published package:
 
 ```bash
@@ -47,9 +51,13 @@ The first call for a session id must include `cdpEndpoint`. Later calls can reus
 
 Internally the MCP server keeps a map from session id to CDP browser/context. Each session has its own current tab state, so calls for different CDP endpoints do not overwrite each other.
 
+If the server was started without a local browser and a tool call omits `browserSession`, the call will fail with an explicit error telling the client to provide `browserSession.id` and `browserSession.cdpEndpoint`.
+
 ## MCP Client Configuration
 
 Use this package instead of upstream `@playwright/mcp`:
+
+For dynamic CDP usage, keep the MCP server startup config minimal. Do not configure a fixed `--cdp-endpoint`, and do not rely on startup-time local browser launch.
 
 Temporary/simple configuration:
 
@@ -147,6 +155,8 @@ You can still pass normal Playwright MCP startup options:
 
 Do not pass `--cdp-endpoint` if you want dynamic per-call endpoints. Use `browserSession.cdpEndpoint` in tool calls instead.
 
+`--headless` is harmless in this mode, but it only matters for legacy local-browser startup paths. Dynamic CDP sessions connect to browsers that were already launched elsewhere, so their headed/headless state is determined by those external browser processes.
+
 ## Tool Call Examples
 
 First call to browser A:
@@ -225,6 +235,8 @@ http://localhost:9223
 
 Only Chromium-family browsers support CDP. Firefox and WebKit are not supported for this dynamic CDP mode.
 
+These browsers are external to the MCP server. The MCP server itself does not need Chrome/Chromium installed locally if all browser access is done through remote CDP endpoints.
+
 ## Agent Prompt Guidance
 
 When using an LLM agent, make the target browser explicit:
@@ -237,6 +249,8 @@ On the first call for each id, include cdpEndpoint. Later calls may pass only id
 ```
 
 This avoids accidental calls to the default browser context.
+
+If you want to be strict, instruct the agent to never call Playwright MCP tools without `browserSession`.
 
 ## OpenAI Agents SDK Integration
 

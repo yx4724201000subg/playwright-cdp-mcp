@@ -74,6 +74,16 @@ source = replaceOnce(source, `      async initialize(clientInfo) {
         this._cwd = clientInfo.cwd;
         this._context = new Context(this.browserContext, {`, 'BrowserBackend initialize cwd');
 
+source = replaceOnce(source, `        this._context = new Context(this.browserContext, {
+          config: this._config,
+          sessionLog: this._sessionLog,
+          cwd: clientInfo.cwd
+        });`, `        this._context = this.browserContext ? new Context(this.browserContext, {
+          config: this._config,
+          sessionLog: this._sessionLog,
+          cwd: clientInfo.cwd
+        }) : void 0;`, 'BrowserBackend initialize optional context');
+
 source = replaceOnce(source, `      async dispose() {
         await this._context?.dispose().catch((e) => debug10("pw:tools:error")(e));
       }
@@ -136,6 +146,64 @@ source = replaceOnce(source, `        if (!tool)
         const cwd = rawArguments._meta?.cwd;
         const raw = !!rawArguments._meta?.raw;
         const context2 = await this._contextForBrowserSession(browserSession);`, 'BrowserBackend callTool browserSession routing');
+
+source = replaceOnce(source, `        if (!browserSession)
+          return this._context;`, `        if (!browserSession) {
+          if (this._context)
+            return this._context;
+          throw new Error('No default browser is available. Provide "browserSession.id" and "browserSession.cdpEndpoint" to connect to a CDP browser dynamically.');
+        }`, 'BrowserBackend default context guard');
+
+source = replaceOnce(source, `async function createConnection(userConfig = {}, contextGetter) {
+  const config = await resolveConfig(userConfig);
+  const tools = filteredTools(config);
+  const backendFactory = {
+    name: "api",
+    nameInConfig: "api",
+    version: packageJSON.version,
+    toolSchemas: tools.map((tool) => tool.schema),
+    create: async (clientInfo) => {
+      const browser = contextGetter ? new SimpleBrowser(await contextGetter()) : (await createBrowserWithInfo(config, clientInfo, {})).browser;
+      const context2 = config.browser.isolated ? await browser.newContext(config.browser.contextOptions) : browser.contexts()[0];
+      return new BrowserBackend(config, context2, tools);
+    },
+    disposed: async () => {
+    }
+  };
+  return createServer("api", packageJSON.version, backendFactory, false);
+}`, `async function createConnection(userConfig = {}, contextGetter) {
+  const config = await resolveConfig(userConfig);
+  const tools = filteredTools(config);
+  const backendFactory = {
+    name: "api",
+    nameInConfig: "api",
+    version: packageJSON.version,
+    toolSchemas: tools.map((tool) => tool.schema),
+    create: async (clientInfo) => {
+      let browser;
+      let context2;
+      if (contextGetter) {
+        browser = new SimpleBrowser(await contextGetter());
+      } else {
+        try {
+          browser = (await createBrowserWithInfo(config, clientInfo, {})).browser;
+        } catch (error) {
+          const message = String(error);
+          const canDeferToDynamicCDP = !config.browser.remoteEndpoint && !config.browser.cdpEndpoint && !config.extension;
+          const isLocalBrowserAvailabilityError = message.includes('Browser "') && message.includes('" is not installed') || message.includes('Missing system dependencies required to run browser');
+          if (!canDeferToDynamicCDP || !isLocalBrowserAvailabilityError)
+            throw error;
+        }
+      }
+      if (browser)
+        context2 = config.browser.isolated ? await browser.newContext(config.browser.contextOptions) : browser.contexts()[0];
+      return new BrowserBackend(config, context2, tools);
+    },
+    disposed: async () => {
+    }
+  };
+  return createServer("api", packageJSON.version, backendFactory, false);
+}`, 'createConnection dynamic CDP fallback');
 
 fs.writeFileSync(bundlePath, source);
 console.log(`Patched ${path.relative(process.cwd(), bundlePath)} for MCP browserSession support.`);

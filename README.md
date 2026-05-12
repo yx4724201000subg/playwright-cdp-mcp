@@ -4,7 +4,7 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
 
 ### Dynamic CDP sessions fork
 
-This fork is published as `@dingmenghua/playwright-mcp-cdp-session` and adds per-call `browserSession` support so one MCP server can control multiple CDP endpoints at the same time. See [Dynamic CDP Browser Sessions](docs/dynamic-cdp-sessions.md) for installation, tool-call examples, validation scripts, and publishing notes.
+This fork is published as `@dingmenghua/playwright-mcp-cdp-session` and adds per-call `browserSession` support so one MCP server can control multiple CDP endpoints at the same time. It can now also start without a locally installed Chrome/Chromium and wait for dynamic `browserSession.cdpEndpoint` connections on demand. See [Dynamic CDP Browser Sessions](docs/dynamic-cdp-sessions.md) for installation, tool-call examples, validation scripts, and publishing notes.
 
 ### Playwright MCP vs Playwright CLI
 
