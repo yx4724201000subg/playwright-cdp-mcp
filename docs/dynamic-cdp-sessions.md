@@ -348,13 +348,42 @@ Installed-package startup avoids the `npx` cold-start download path and is more 
 
 This repo includes two validation scripts.
 
+`mcp2cli` smoke test:
+
+```bash
+mcp2cli --mcp-stdio "node cli.js" --list
+mcp2cli --mcp-stdio "node cli.js" browser-navigate --help
+mcp2cli --pretty --mcp-stdio "node cli.js" browser-snapshot --browser-session '{"id":"demo"}'
+```
+
+Expected signs of success:
+
+```text
+--browser-session BROWSER_SESSION
+Error: browserSession "demo" does not exist yet; provide "browserSession.cdpEndpoint" on the first call.
+```
+
+Those results show that the MCP server started successfully without requiring a local Chrome/Chromium and reached the dynamic CDP session logic.
+
+You can also intentionally verify the dynamic connect path with an invalid endpoint:
+
+```bash
+printf '%s\n' '{"url":"https://example.com","browserSession":{"id":"demo","cdpEndpoint":"http://127.0.0.1:65535"}}' | mcp2cli --pretty --mcp-stdio "node cli.js" browser-navigate --stdin
+```
+
+Expected result is a CDP connection error such as `ECONNREFUSED`, not a local browser installation error.
+
+Note that `mcp2cli --mcp-stdio "node cli.js" ...` starts a fresh MCP server process for each command invocation. That makes it a good smoke test for startup behavior and first-call dynamic CDP connection, but not for reusing an in-memory `browserSession` across separate shell commands.
+
+To validate session reuse within one long-running MCP server process, use the direct validation script below.
+
 Direct MCP multi-CDP test:
 
 ```bash
 node scripts/direct-mcp-multi-cdp-check.mjs
 ```
 
-This starts four CDP browsers, calls the MCP tools directly, and verifies snapshots do not leak content across sessions.
+This starts four CDP browsers with Playwright's bundled Chromium, calls the MCP tools directly, and verifies snapshots do not leak content across sessions.
 
 OpenAI Agents SDK test:
 
@@ -368,7 +397,7 @@ Or with a local `.env` file:
 node --env-file=.env scripts/agent-sdk-cdp-session-check.mjs
 ```
 
-This starts three CDP browsers and lets an OpenAI Agent call the patched Playwright MCP server. A successful run prints:
+This starts three CDP browsers with Playwright's bundled Chromium and lets an OpenAI Agent call the patched Playwright MCP server. A successful run prints:
 
 ```text
 AGENT_CDP_SESSION_OK

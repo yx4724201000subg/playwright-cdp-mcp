@@ -22,7 +22,6 @@ async function freePort() {
 async function launchCdpBrowser(label) {
   const port = await freePort();
   const context = await chromium.launchPersistentContext(`/tmp/pw-mcp-direct-${label}`, {
-    channel: 'chrome',
     headless: true,
     args: [`--remote-debugging-port=${port}`],
   });
