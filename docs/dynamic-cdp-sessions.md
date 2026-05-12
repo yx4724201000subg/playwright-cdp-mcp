@@ -377,6 +377,21 @@ Note that `mcp2cli --mcp-stdio "node cli.js" ...` starts a fresh MCP server proc
 
 To validate session reuse within one long-running MCP server process, use the direct validation script below.
 
+`mcp2cli` persistent-session example:
+
+```bash
+mcp2cli --mcp-stdio "node cli.js" --session-start pwcdp
+mcp2cli --session-list
+
+printf '%s\n' '{"url":"data:text/html,<title>persist</title><main><h1>PERSIST_OK</h1></main>","browserSession":{"id":"demo","cdpEndpoint":"http://127.0.0.1:9222"}}' | mcp2cli --session pwcdp browser-navigate --stdin
+
+mcp2cli --session pwcdp browser-snapshot --browser-session '{"id":"demo"}'
+
+mcp2cli --session-stop pwcdp
+```
+
+In that mode, `mcp2cli` keeps a long-running MCP client session alive in the background, so later commands can reuse the same in-memory `browserSession` id.
+
 Direct MCP multi-CDP test:
 
 ```bash
