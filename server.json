@@ -6,12 +6,12 @@
     "url": "https://github.com/yx4724201000subg/playwright-mcp",
     "source": "github"
   },
-  "version": "0.0.73-cdp.2",
+  "version": "0.0.73-cdp.3",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@dingmenghua/playwright-mcp-cdp-session",
-      "version": "0.0.73-cdp.2",
+      "version": "0.0.73-cdp.3",
       "transport": {
         "type": "stdio"
       }

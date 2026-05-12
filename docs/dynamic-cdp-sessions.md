@@ -15,7 +15,7 @@ npx @dingmenghua/playwright-mcp-cdp-session@latest
 The current published version is:
 
 ```text
-@dingmenghua/playwright-mcp-cdp-session@0.0.73-cdp.2
+@dingmenghua/playwright-mcp-cdp-session@0.0.73-cdp.3
 ```
 
 ## What Changed
