@@ -57,8 +57,7 @@ node utils/generate-links.js
       "command": "npx",
       "args": [
         "-y",
-        "@dingmenghua/playwright-mcp-cdp-session@latest",
-        "--headless"
+        "@dingmenghua/playwright-mcp-cdp-session@latest"
       ]
     }
   }

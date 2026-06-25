@@ -57,7 +57,7 @@ If the server was started in dynamic CDP mode (the default when no remote/extens
 
 Use this package instead of upstream `@playwright/mcp`:
 
-For dynamic CDP usage, keep the MCP server startup config minimal. Do not pass `--browser`, `--cdp-endpoint`, or `--executable-path` — the server defaults to dynamic CDP mode and waits for `browserSession.cdpEndpoint` in tool calls. Pass `--headless` only if you also want the legacy local-browser path to be headless (it is harmless in dynamic CDP mode).
+For dynamic CDP usage, keep the MCP server startup config minimal. Do not pass `--browser`, `--cdp-endpoint`, or `--executable-path` — the server defaults to dynamic CDP mode and waits for `browserSession.cdpEndpoint` in tool calls. `--headless` is harmless but has no effect in this mode (the headed/headless state is determined by the externally launched CDP browsers).
 
 Temporary/simple configuration:
 
@@ -68,8 +68,7 @@ Temporary/simple configuration:
       "command": "npx",
       "args": [
         "-y",
-        "@dingmenghua/playwright-mcp-cdp-session@latest",
-        "--headless"
+        "@dingmenghua/playwright-mcp-cdp-session@latest"
       ]
     }
   }
@@ -81,7 +80,7 @@ This requires no pre-install step. It is convenient for quick setup, but the fir
 Codex CLI add command:
 
 ```bash
-codex mcp add playwright-cdp -- npx -y @dingmenghua/playwright-mcp-cdp-session@latest --headless
+codex mcp add playwright-cdp -- npx -y @dingmenghua/playwright-mcp-cdp-session@latest
 ```
 
 Optional prewarm command for machines that use the `npx` configuration:
@@ -95,7 +94,7 @@ Codex config template:
 ```toml
 [mcp_servers.playwright-cdp]
 command = "npx"
-args = ["-y", "@dingmenghua/playwright-mcp-cdp-session@latest", "--headless"]
+args = ["-y", "@dingmenghua/playwright-mcp-cdp-session@latest"]
 ```
 
 If you installed the package globally, use this Codex config instead:
@@ -103,7 +102,7 @@ If you installed the package globally, use this Codex config instead:
 ```toml
 [mcp_servers.playwright-cdp]
 command = "playwright-mcp-cdp"
-args = ["--headless"]
+args = []
 ```
 
 Minimal `npx` configuration:
@@ -137,7 +136,7 @@ For clients that require `-y`:
 }
 ```
 
-You can still pass normal Playwright MCP startup options:
+You can still pass normal Playwright MCP startup options (e.g. `--port` for HTTP transport). Dynamic CDP mode is the default as long as you do not pass `--browser`, `--cdp-endpoint`, `--endpoint`, `--extension`, or `--executable-path`:
 
 ```json
 {
@@ -145,17 +144,14 @@ You can still pass normal Playwright MCP startup options:
     "playwright-cdp": {
       "command": "npx",
       "args": [
-        "@dingmenghua/playwright-mcp-cdp-session@latest",
-        "--headless"
+        "@dingmenghua/playwright-mcp-cdp-session@latest"
       ]
     }
   }
 }
 ```
 
-Do not pass `--cdp-endpoint` if you want dynamic per-call endpoints. Use `browserSession.cdpEndpoint` in tool calls instead.
-
-`--headless` is harmless in this mode, but it only matters for legacy local-browser startup paths. Dynamic CDP sessions connect to browsers that were already launched elsewhere, so their headed/headless state is determined by those external browser processes.
+Do not pass `--cdp-endpoint` if you want dynamic per-call endpoints. Use `browserSession.cdpEndpoint` in tool calls instead. Pass `--browser=chrome` (or `--executable-path`) only if you want the legacy local-browser launch flow instead of dynamic CDP.
 
 ## Tool Call Examples
 
@@ -264,7 +260,7 @@ import { Agent, MCPServerStdio, run } from '@openai/agents';
 const playwrightMcp = new MCPServerStdio({
   name: 'playwright-cdp-session',
   command: 'npx',
-  args: ['-y', '@dingmenghua/playwright-mcp-cdp-session@latest', '--headless'],
+  args: ['-y', '@dingmenghua/playwright-mcp-cdp-session@latest'],
   clientSessionTimeoutSeconds: 120,
   cacheToolsList: false,
 });
@@ -314,7 +310,7 @@ MCP config after global install:
   "mcpServers": {
     "playwright-cdp": {
       "command": "playwright-mcp-cdp",
-      "args": ["--headless"]
+      "args": []
     }
   }
 }
@@ -334,8 +330,7 @@ MCP config after local install:
     "playwright-cdp": {
       "command": "node",
       "args": [
-        "node_modules/@dingmenghua/playwright-mcp-cdp-session/cli.js",
-        "--headless"
+        "node_modules/@dingmenghua/playwright-mcp-cdp-session/cli.js"
       ]
     }
   }
