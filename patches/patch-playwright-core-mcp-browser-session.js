@@ -191,15 +191,9 @@ source = replaceOnce(source, `async function createConnection(userConfig = {}, c
       if (contextGetter) {
         browser = new SimpleBrowser(await contextGetter());
       } else {
-        try {
+        const canDeferToDynamicCDP = !config.browser.remoteEndpoint && !config.browser.cdpEndpoint && !config.extension && !config.browser.explicitBrowser && !config.browser.launchOptions?.executablePath;
+        if (!canDeferToDynamicCDP)
           browser = (await createBrowserWithInfo(config, clientInfo, {})).browser;
-        } catch (error) {
-          const message = String(error);
-          const canDeferToDynamicCDP = !config.browser.remoteEndpoint && !config.browser.cdpEndpoint && !config.extension;
-          const isLocalBrowserAvailabilityError = message.includes('Browser "') && message.includes('" is not installed') || message.includes("Chromium distribution '") && message.includes("' is not found") || message.includes("Executable doesn't exist") || message.includes('Missing system dependencies required to run browser');
-          if (!canDeferToDynamicCDP || !isLocalBrowserAvailabilityError)
-            throw error;
-        }
       }
       if (browser)
         context2 = config.browser.isolated ? await browser.newContext(config.browser.contextOptions) : browser.contexts()[0];
@@ -209,7 +203,7 @@ source = replaceOnce(source, `async function createConnection(userConfig = {}, c
     }
   };
   return createServer("api", packageJSON.version, backendFactory, false);
-}`, 'createConnection dynamic CDP fallback', ['const canDeferToDynamicCDP = !config.browser.remoteEndpoint && !config.browser.cdpEndpoint && !config.extension;']);
+}`, 'createConnection dynamic CDP default', ['const canDeferToDynamicCDP = !config.browser.remoteEndpoint && !config.browser.cdpEndpoint && !config.extension && !config.browser.explicitBrowser']);
 
 source = replaceOnce(source, `      create: async (clientInfo) => {
         if (useSharedBrowser && clientCount === 0) {
@@ -241,44 +235,33 @@ source = replaceOnce(source, `      create: async (clientInfo) => {
         await browserContext.browser().close().catch(() => {
         });
       }`, `      create: async (clientInfo) => {
-        const canDeferToDynamicCDP = !config.browser.remoteEndpoint && !config.browser.cdpEndpoint && !config.extension;
-        const isLocalBrowserAvailabilityError = (message) => message.includes('Browser "') && message.includes('" is not installed') || message.includes("Chromium distribution '") && message.includes("' is not found") || message.includes("Executable doesn't exist") || message.includes('Missing system dependencies required to run browser');
+        const canDeferToDynamicCDP = !config.browser.remoteEndpoint && !config.browser.cdpEndpoint && !config.extension && !config.browser.explicitBrowser && !config.browser.launchOptions?.executablePath;
         let browserContext;
         let browser;
         let canBind = false;
+        if (canDeferToDynamicCDP) {
+          clientCount++;
+          return new BrowserBackend(config, browserContext, tools);
+        }
         if (useSharedBrowser && clientCount === 0) {
-          try {
-            const { browser: browser2, canBind: canBind2 } = await createBrowserWithInfo(config, clientInfo, options);
-            sharedBrowser = browser2;
-            if (canBind2)
-              await browser2.bind(clientInfo.clientName, { workspaceDir: clientInfo.cwd });
-          } catch (error) {
-            const message = String(error);
-            if (!canDeferToDynamicCDP || !isLocalBrowserAvailabilityError(message))
-              throw error;
-          }
+          const { browser: browser2, canBind: canBind2 } = await createBrowserWithInfo(config, clientInfo, options);
+          sharedBrowser = browser2;
+          if (canBind2)
+            await browser2.bind(clientInfo.clientName, { workspaceDir: clientInfo.cwd });
         }
         clientCount++;
         if (sharedBrowser) {
           browser = sharedBrowser;
         } else {
-          try {
-            ({ browser, canBind } = await createBrowserWithInfo(config, clientInfo, options));
-          } catch (error) {
-            const message = String(error);
-            if (!canDeferToDynamicCDP || !isLocalBrowserAvailabilityError(message))
-              throw error;
-          }
+          ({ browser, canBind } = await createBrowserWithInfo(config, clientInfo, options));
         }
-        if (browser) {
-          if (canBind) {
-            const count = (clientNameCounters.get(clientInfo.clientName) ?? 0) + 1;
-            clientNameCounters.set(clientInfo.clientName, count);
-            const sessionName = count > 1 ? \`\${clientInfo.clientName} (\${count})\` : clientInfo.clientName;
-            await browser.bind(sessionName, { workspaceDir: clientInfo.cwd });
-          }
-          browserContext = config.browser.isolated ? await browser.newContext(config.browser.contextOptions) : browser.contexts()[0];
+        if (canBind) {
+          const count = (clientNameCounters.get(clientInfo.clientName) ?? 0) + 1;
+          clientNameCounters.set(clientInfo.clientName, count);
+          const sessionName = count > 1 ? \`\${clientInfo.clientName} (\${count})\` : clientInfo.clientName;
+          await browser.bind(sessionName, { workspaceDir: clientInfo.cwd });
         }
+        browserContext = config.browser.isolated ? await browser.newContext(config.browser.contextOptions) : browser.contexts()[0];
         return new BrowserBackend(config, browserContext, tools);
       },
       disposed: async (backend) => {
@@ -290,9 +273,22 @@ source = replaceOnce(source, `      create: async (clientInfo) => {
         const browserContext = backend.browserContext;
         await browserContext?.close().catch(() => {
         });
-        await browserContext?.browser().close().catch(() => {
+        await browserContext?.browser()?.close().catch(() => {
         });
-      }`, 'CLI backend dynamic CDP fallback', ['await browserContext?.close().catch(() => {', 'message.includes("Chromium distribution \'") && message.includes("\' is not found")']);
+      }`, 'CLI backend dynamic CDP default', ['await browserContext?.browser()?.close().catch(() => {']);
+
+source = replaceOnce(source, `  const config = {
+    browser: {
+      browserName,
+      isolated: cliOptions.isolated,
+      userDataDir: cliOptions.userDataDir,
+      launchOptions,`, `  const config = {
+    browser: {
+      browserName,
+      explicitBrowser: cliOptions.browser !== undefined,
+      isolated: cliOptions.isolated,
+      userDataDir: cliOptions.userDataDir,
+      launchOptions,`, 'configFromCLIOptions explicitBrowser', ['explicitBrowser: cliOptions.browser !== undefined']);
 
 fs.writeFileSync(bundlePath, source);
 console.log(`Patched ${path.relative(process.cwd(), bundlePath)} for MCP browserSession support.`);

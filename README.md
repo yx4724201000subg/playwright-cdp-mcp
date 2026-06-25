@@ -4,7 +4,9 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
 
 ### Dynamic CDP sessions fork
 
-This fork is published as [`@dingmenghua/playwright-mcp-cdp-session`](https://www.npmjs.com/package/@dingmenghua/playwright-mcp-cdp-session). It adds a per-call `browserSession` argument so one MCP server can control multiple CDP endpoints simultaneously, and can start without a local Chrome/Chromium.
+This fork is published as [`@dingmenghua/playwright-mcp-cdp-session`](https://www.npmjs.com/package/@dingmenghua/playwright-mcp-cdp-session). It adds a per-call `browserSession` argument so one MCP server can control multiple CDP endpoints simultaneously.
+
+By default (no `--cdp-endpoint`/`--endpoint`/`--extension`, and no explicit `--browser`/`--executable-path`) the server starts in **dynamic CDP mode**: it does not launch a local Chrome/Chromium and waits for `browserSession.cdpEndpoint` in tool calls. Pass `--browser=chrome` (or `--executable-path`) to opt into the legacy local-browser launch flow.
 
 ```bash
 npx @dingmenghua/playwright-mcp-cdp-session@latest

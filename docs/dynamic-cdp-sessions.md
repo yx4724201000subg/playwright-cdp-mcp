@@ -2,9 +2,9 @@
 
 This fork publishes a patched Playwright MCP package that lets one MCP server control multiple Chromium browsers over different CDP endpoints.
 
-The server can start without a locally installed Chrome/Chromium. In dynamic session mode it will wait for per-call `browserSession.cdpEndpoint` values and connect lazily when the first tool call for that session arrives.
+By default (when no `--cdp-endpoint`, `--endpoint`, or `--extension` is configured, and no `--browser`/`--executable-path` is explicitly requested) the server starts in **dynamic CDP mode**: it does not launch a local Chrome/Chromium and waits for per-call `browserSession.cdpEndpoint` values, connecting lazily when the first tool call for that session arrives.
 
-This means the package no longer needs a local browser just to boot the MCP server. A local Chrome/Chromium is only relevant if you intentionally use the legacy default browser flow instead of dynamic CDP sessions.
+To opt into the legacy local-browser launch flow instead, pass `--browser` (e.g. `--browser=chrome`) or `--executable-path`. A local Chrome/Chromium is only launched in that case.
 
 Published package:
 
@@ -51,13 +51,13 @@ The first call for a session id must include `cdpEndpoint`. Later calls can reus
 
 Internally the MCP server keeps a map from session id to CDP browser/context. Each session has its own current tab state, so calls for different CDP endpoints do not overwrite each other.
 
-If the server was started without a local browser and a tool call omits `browserSession`, the call will fail with an explicit error telling the client to provide `browserSession.id` and `browserSession.cdpEndpoint`.
+If the server was started in dynamic CDP mode (the default when no remote/extension/local-browser option is configured) and a tool call omits `browserSession`, the call will fail with an explicit error telling the client to provide `browserSession.id` and `browserSession.cdpEndpoint`.
 
 ## MCP Client Configuration
 
 Use this package instead of upstream `@playwright/mcp`:
 
-For dynamic CDP usage, keep the MCP server startup config minimal. Do not configure a fixed `--cdp-endpoint`, and do not rely on startup-time local browser launch.
+For dynamic CDP usage, keep the MCP server startup config minimal. Do not pass `--browser`, `--cdp-endpoint`, or `--executable-path` — the server defaults to dynamic CDP mode and waits for `browserSession.cdpEndpoint` in tool calls. Pass `--headless` only if you also want the legacy local-browser path to be headless (it is harmless in dynamic CDP mode).
 
 Temporary/simple configuration:
 
