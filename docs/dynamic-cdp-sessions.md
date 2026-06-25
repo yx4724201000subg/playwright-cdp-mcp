@@ -15,7 +15,7 @@ npx @dingmenghua/playwright-mcp-cdp-session@latest
 The current published version is:
 
 ```text
-@dingmenghua/playwright-mcp-cdp-session@0.0.73-cdp.3
+@dingmenghua/playwright-mcp-cdp-session@0.0.73-cdp.4
 ```
 
 ## What Changed
@@ -450,6 +450,7 @@ NPM does not allow overwriting an already published version. Bump the suffix for
 ```text
 0.0.73-cdp.2
 0.0.73-cdp.3
+0.0.73-cdp.4
 ```
 
 Use an npm token with package write permission and `bypass_2fa: true` for server-side publishing.
