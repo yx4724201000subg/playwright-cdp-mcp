@@ -4,7 +4,20 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
 
 ### Dynamic CDP sessions fork
 
-This fork is published as `@dingmenghua/playwright-mcp-cdp-session` and adds per-call `browserSession` support so one MCP server can control multiple CDP endpoints at the same time. It can now also start without a locally installed Chrome/Chromium and wait for dynamic `browserSession.cdpEndpoint` connections on demand. See [Dynamic CDP Browser Sessions](docs/dynamic-cdp-sessions.md) for installation, tool-call examples, validation scripts, and publishing notes.
+This fork is published as [`@dingmenghua/playwright-mcp-cdp-session`](https://www.npmjs.com/package/@dingmenghua/playwright-mcp-cdp-session). It adds a per-call `browserSession` argument so one MCP server can control multiple CDP endpoints simultaneously, and can start without a local Chrome/Chromium.
+
+```bash
+npx @dingmenghua/playwright-mcp-cdp-session@latest
+```
+
+First call for a session must include `cdpEndpoint`; later calls reuse the session by id:
+
+```json
+{ "browserSession": { "id": "chrome-a", "cdpEndpoint": "http://localhost:9222" } }
+{ "browserSession": { "id": "chrome-a" } }
+```
+
+📖 Full setup, tool-call examples, and validation scripts: [Dynamic CDP Browser Sessions](docs/dynamic-cdp-sessions.md)
 
 ### Playwright MCP vs Playwright CLI
 
@@ -31,17 +44,19 @@ node utils/generate-links.js
 
 ### Getting started
 
-First, install the Playwright MCP server with your client.
+> Dynamic CDP fork — use `@dingmenghua/playwright-mcp-cdp-session` and pass `browserSession.cdpEndpoint` per tool call instead of `--cdp-endpoint` at startup. Details: [docs/dynamic-cdp-sessions.md](docs/dynamic-cdp-sessions.md).
 
-**Standard config** works in most of the tools:
+**Standard config:**
 
 ```js
 {
   "mcpServers": {
-    "playwright": {
+    "playwright-cdp": {
       "command": "npx",
       "args": [
-        "@playwright/mcp@latest"
+        "-y",
+        "@dingmenghua/playwright-mcp-cdp-session@latest",
+        "--headless"
       ]
     }
   }
@@ -60,7 +75,7 @@ Add via the Amp VS Code extension settings screen or by updating your settings.j
   "playwright": {
     "command": "npx",
     "args": [
-      "@playwright/mcp@latest"
+      "@dingmenghua/playwright-mcp-cdp-session@latest"
     ]
   }
 }
@@ -71,7 +86,7 @@ Add via the Amp VS Code extension settings screen or by updating your settings.j
 Add via the `amp mcp add`command below
 
 ```bash
-amp mcp add playwright -- npx @playwright/mcp@latest
+amp mcp add playwright -- npx @dingmenghua/playwright-mcp-cdp-session@latest
 ```
 
 </details>
@@ -87,7 +102,7 @@ Add via the Antigravity settings or by updating your configuration file:
     "playwright": {
       "command": "npx",
       "args": [
-        "@playwright/mcp@latest"
+        "@dingmenghua/playwright-mcp-cdp-session@latest"
       ]
     }
   }
@@ -102,7 +117,7 @@ Add via the Antigravity settings or by updating your configuration file:
 Use the Claude Code CLI to add the Playwright MCP server:
 
 ```bash
-claude mcp add playwright npx @playwright/mcp@latest
+claude mcp add playwright npx @dingmenghua/playwright-mcp-cdp-session@latest
 ```
 </details>
 
@@ -131,7 +146,7 @@ Add the following to your [`cline_mcp_settings.json`](https://docs.cline.bot/mcp
       "timeout": 30,
       "args": [
         "-y",
-        "@playwright/mcp@latest"
+        "@dingmenghua/playwright-mcp-cdp-session@latest"
       ],
       "disabled": false
     }
@@ -147,7 +162,7 @@ Add the following to your [`cline_mcp_settings.json`](https://docs.cline.bot/mcp
 Use the Codex CLI to add the Playwright MCP server:
 
 ```bash
-codex mcp add playwright npx "@playwright/mcp@latest"
+codex mcp add playwright npx "@dingmenghua/playwright-mcp-cdp-session@latest"
 ```
 
 Alternatively, create or edit the configuration file `~/.codex/config.toml` and add:
@@ -155,7 +170,7 @@ Alternatively, create or edit the configuration file `~/.codex/config.toml` and 
 ```toml
 [mcp_servers.playwright]
 command = "npx"
-args = ["@playwright/mcp@latest"]
+args = ["@dingmenghua/playwright-mcp-cdp-session@latest"]
 ```
 
 For more information, see the [Codex MCP documentation](https://github.com/openai/codex/blob/main/codex-rs/config.md#mcp_servers).
@@ -183,7 +198,7 @@ Alternatively, create or edit the configuration file `~/.copilot/mcp-config.json
         "*"
       ],
       "args": [
-        "@playwright/mcp@latest"
+        "@dingmenghua/playwright-mcp-cdp-session@latest"
       ]
     }
   }
@@ -203,7 +218,7 @@ For more information, see the [Copilot CLI documentation](https://docs.github.co
 
 #### Or install manually:
 
-Go to `Cursor Settings` -> `MCP` -> `Add new MCP Server`. Name to your liking, use `command` type with the command `npx @playwright/mcp@latest`. You can also verify config or add command like arguments via clicking `Edit`.
+Go to `Cursor Settings` -> `MCP` -> `Add new MCP Server`. Name to your liking, use `command` type with the command `npx @dingmenghua/playwright-mcp-cdp-session@latest`. You can also verify config or add command like arguments via clicking `Edit`.
 
 </details>
 
@@ -213,7 +228,7 @@ Go to `Cursor Settings` -> `MCP` -> `Add new MCP Server`. Name to your liking, u
 Use the Factory CLI to add the Playwright MCP server:
 
 ```bash
-droid mcp add playwright "npx @playwright/mcp@latest"
+droid mcp add playwright "npx @dingmenghua/playwright-mcp-cdp-session@latest"
 ```
 
 Alternatively, type `/mcp` within Factory droid to open an interactive UI for managing MCP servers.
@@ -234,11 +249,11 @@ Follow the MCP install [guide](https://github.com/google-gemini/gemini-cli/blob/
 
 #### Click the button to install:
 
-[![Install in Goose](https://block.github.io/goose/img/extension-install-dark.svg)](https://block.github.io/goose/extension?cmd=npx&arg=%40playwright%2Fmcp%40latest&id=playwright&name=Playwright&description=Interact%20with%20web%20pages%20through%20structured%20accessibility%20snapshots%20using%20Playwright)
+[![Install in Goose](https://block.github.io/goose/img/extension-install-dark.svg)](https://block.github.io/goose/extension?cmd=npx&arg=%40dingmenghua%2Fplaywright-mcp-cdp-session%40latest&id=playwright-cdp&name=Playwright%20CDP&description=Interact%20with%20web%20pages%20through%20structured%20accessibility%20snapshots%20using%20Playwright)
 
 #### Or install manually:
 
-Go to `Advanced settings` -> `Extensions` -> `Add custom extension`. Name to your liking, use type `STDIO`, and set the `command` to `npx @playwright/mcp`. Click "Add Extension".
+Go to `Advanced settings` -> `Extensions` -> `Add custom extension`. Name to your liking, use type `STDIO`, and set the `command` to `npx @dingmenghua/playwright-mcp-cdp-session@latest`. Click "Add Extension".
 </details>
 
 <details>
@@ -259,7 +274,7 @@ Alternatively, add to `.junie/mcp/mcp.json`:
       "command": "npx",
       "args": [
         "-y",
-        "@playwright/mcp@latest"
+        "@dingmenghua/playwright-mcp-cdp-session@latest"
       ]
     }
   }
@@ -283,7 +298,7 @@ Follow the MCP Servers [documentation](https://kiro.dev/docs/mcp/). For example 
     "playwright": {
       "command": "npx",
       "args": [
-        "@playwright/mcp@latest"
+        "@dingmenghua/playwright-mcp-cdp-session@latest"
       ]
     }
   }
@@ -316,7 +331,7 @@ Follow the MCP Servers [documentation](https://opencode.ai/docs/mcp-servers/). F
       "type": "local",
       "command": [
         "npx",
-        "@playwright/mcp@latest"
+        "@dingmenghua/playwright-mcp-cdp-session@latest"
       ],
       "enabled": true
     }
@@ -347,7 +362,7 @@ Follow the MCP install [guide](https://code.visualstudio.com/docs/copilot/chat/m
 
 ```bash
 # For VS Code
-code --add-mcp '{"name":"playwright","command":"npx","args":["@playwright/mcp@latest"]}'
+code --add-mcp '{"name":"playwright","command":"npx","args":["@dingmenghua/playwright-mcp-cdp-session@latest"]}'
 ```
 
 After installation, the Playwright MCP server will be available for use with your GitHub Copilot agent in VS Code.
@@ -365,7 +380,7 @@ Alternatively, use the slash command `/add-mcp` in the Warp prompt and paste the
     "playwright": {
       "command": "npx",
       "args": [
-        "@playwright/mcp@latest"
+        "@dingmenghua/playwright-mcp-cdp-session@latest"
       ]
     }
   }
@@ -470,7 +485,7 @@ state [here](https://playwright.dev/docs/auth).
     "playwright": {
       "command": "npx",
       "args": [
-        "@playwright/mcp@latest",
+        "@dingmenghua/playwright-mcp-cdp-session@latest",
         "--isolated",
         "--storage-state={path/to/storage.json}"
       ]
@@ -518,7 +533,7 @@ The Playwright MCP server can be configured using a JSON configuration file. You
 using the `--config` command line option:
 
 ```bash
-npx @playwright/mcp@latest --config path/to/config.json
+npx @dingmenghua/playwright-mcp-cdp-session@latest --config path/to/config.json
 ```
 
 <details>
@@ -737,7 +752,7 @@ When running headed browser on system w/o display or from worker processes of th
 run the MCP server from environment with the DISPLAY and pass the `--port` flag to enable HTTP transport.
 
 ```bash
-npx @playwright/mcp@latest --port 8931
+npx @dingmenghua/playwright-mcp-cdp-session@latest --port 8931
 ```
 
 And then in MCP client config, set the `url` to the HTTP endpoint:
