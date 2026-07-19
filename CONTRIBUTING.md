@@ -1,86 +1,79 @@
 # Contributing
 
-## Choosing an Issue
+This is a fork of [microsoft/playwright-mcp](https://github.com/microsoft/playwright-mcp) that adds dynamic CDP session support. Contributions are welcome.
 
-To maintain project quality and focus, Playwright **requires a corresponding issue** for every contribution, with the exception of minor documentation fixes.
+## Repo layout
 
-If you would like to address a bug or feature that isn't currently listed, **please file a new issue first**. This allows the community and maintainers to provide early feedback and facilitates a discussion before you invest time in developing a pull request.
+This fork vendors the Playwright monorepo via `git subtree` into `playwright/`. Source changes live as TypeScript under `playwright/packages/playwright-core/src/tools/` — **no string-replacement patches** against published bundles.
 
-When submitting an issue, please state clearly if you intend to work on it. Once triaged and approved, the maintainers will determine the best path forward—whether the task should be handled by the **core team**, an **automated agent**, or a **community contributor**. If the issue is assigned to you, you may then proceed with your changes and submit a PR.
-
-### Submission Policy
-To ensure the maintainability of the project, please note the following:
-
-* **Unsolicited PRs:** Pull requests submitted without a linked issue or prior approval will be closed.
-* **Low-Quality AI Contributions:** PRs that do not meet our quality standards or lack human oversight (including low-quality agentic submissions) will be closed without explanation.
-* **Approval Required:** Only proceed with a PR once the issue has been officially assigned to you or approved for community contribution.
-
-## Make a change
-
-> [!WARNING]
-> The core of the Playwright MCP was moved to the [Playwright monorepo](https://github.com/microsoft/playwright).
-
-Clone the Playwright repository. If you plan to send a pull request, it might be better to [fork the repository](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo) first.
-
-
-```bash
-git clone https://github.com/microsoft/playwright
-cd playwright
+```
+playwright-cdp-mcp/
+├── playwright/                              ← microsoft/playwright via git subtree
+│   └── packages/playwright-core/src/tools/  ← fork edits MCP sources here
+├── scripts/
+│   ├── build-pw-core.js                     ← esbuild → lib/utilsBundle.js + lib/coreBundle.js
+│   └── postinstall.js                       ← runs on `npm install`
+├── cli.js                                   ← CLI entry point
+├── index.js                                 ← programmatic API entry point
+└── docs/                                    ← documentation
 ```
 
-Install dependencies and run the build in watch mode.
-```bash
-# install deps and run watch
-npm ci
-npm run watch
-npx playwright install
-```
-
-Source code for Playwright MCP is located at [packages/playwright/src/mcp](https://github.com/microsoft/playwright/blob/main/packages/playwright/src/mcp).
+## First-time setup
 
 ```bash
-# list source files
-ls -la packages/playwright/src/mcp
+git clone https://github.com/yx4724201000subg/playwright-cdp-mdp.git
+cd playwright-cdp-mcp
+npm install      # postinstall auto-builds the bundles
 ```
 
-Coding style is fully defined in [eslint.config.mjs](https://github.com/microsoft/playwright/blob/main/eslint.config.mjs). Before creating a pull request, or at any moment during development, run linter to check all kinds of things:
+## Making a change
+
+1. Edit TypeScript under `playwright/packages/playwright-core/src/tools/`.
+2. Rebuild:
+
+   ```bash
+   npm run build:pw
+   ```
+
+3. Verify:
+
+   ```bash
+   node cli.js --help
+   node scripts/direct-mcp-multi-cdp-check.mjs    # → DIRECT_MULTI_CDP_OK
+   npm run lint
+   ```
+
+4. Commit both the TS source changes and any `package.json` / `cli.js` / `index.js` updates. The `playwright/**/lib/` directories are gitignored — no build artifacts get committed.
+
+### What the fork changes vs upstream
+
+Six TS files under `playwright/packages/playwright-core/src/tools/`:
+
+- `utils/mcp/tool.ts` — adds `browserSession` to every tool's input schema.
+- `mcp/config.d.ts` — declares `browser.explicitBrowser`.
+- `mcp/config.ts` — populates `explicitBrowser` from `cliOptions.browser`.
+- `backend/browserBackend.ts` — per-id `_browserSessions` map + lazy CDP resolver.
+- `mcp/index.ts` — `createConnection` skips local launch in dynamic CDP mode.
+- `mcp/program.ts` — CLI factory skips local launch in dynamic CDP mode.
+
+Keep these edits minimal and well-commented so they are easy to re-apply when upgrading the subtree.
+
+## Upgrading the playwright subtree
+
 ```bash
-# lint the source base before sending PR
-npm run flint
+# 1. Fetch upstream into the subtree
+git subtree pull --prefix=playwright https://github.com/microsoft/playwright.git <commit-or-tag>
+
+# 2. Resolve conflicts in the 6 files above.
+
+# 3. Rebuild and verify
+npm install
+node scripts/direct-mcp-multi-cdp-check.mjs
 ```
 
-Comments should have an explicit purpose and should improve readability rather than hinder it. If the code would not be understood without comments, consider re-writing the code to make it self-explanatory.
+## Commit messages
 
-## Add a test
-
-Playwright requires a test for the new or modified functionality. An exception would be a pure refactoring, but chances are you are doing more than that.
-
-There are multiple [test suites](https://github.com/microsoft/playwright/blob/main/tests) in Playwright that will be executed on the CI. Tests for Playwright MCP are located at [tests/mcp](https://github.com/microsoft/playwright/blob/main/tests/mcp).
-
-```bash
-# list test files
-ls -la tests/mcp
-```
-
-To run the mcp tests, use
-
-```bash
-# fast path runs all MCP tests in Chromium
-npm run mcp-ctest
-```
-
-```bash
-# slow path runs all tests in three browsers
-npm run mcp-test
-```
-
-Since Playwright tests are using Playwright under the hood, everything from our documentation applies, for example [this guide on running and debugging tests](https://playwright.dev/docs/running-tests#running-tests).
-
-Note that tests should be *hermetic*, and not depend on external services. Tests should work on all three platforms: macOS, Linux and Windows.
-
-## Write a commit message
-
-Commit messages should follow the [Semantic Commit Messages](https://www.conventionalcommits.org/en/v1.0.0/) format:
+Follow [Semantic Commit Messages](https://www.conventionalcommits.org/en/v1.0.0/):
 
 ```
 label(namespace): title
@@ -90,55 +83,22 @@ description
 footer
 ```
 
-1. *label* is one of the following:
-    - `fix` - bug fixes
-    - `feat` - new features
-    - `docs` - documentation-only changes
-    - `test` - test-only changes
-    - `devops` - changes to the CI or build
-    - `chore` - everything that doesn't fall under previous categories
-2. *namespace* is put in parentheses after label and is optional. Must be lowercase.
-3. *title* is a brief summary of changes.
-4. *description* is **optional**, new-line separated from title and is in present tense.
-5. *footer* is **optional**, new-line separated from *description* and contains "fixes" / "references" attribution to GitHub issues.
+Labels: `fix`, `feat`, `docs`, `test`, `devops`, `chore`.
 
-Example:
+Examples:
 
 ```
-feat(trace viewer): network panel filtering
-
-This patch adds a filtering toolbar to the network panel.
-<link to a screenshot>
-
-Fixes #123, references #234.
+feat(cdp): support per-call browserSession.cdpEndpoint
+fix(build): resolve esbuild alias for raw-body
+docs(readme): clarify dynamic CDP mode
 ```
 
-## Send a pull request
+Do not add `Co-Authored-By` agents or "Generated with" lines in commit messages.
 
-All submissions, including submissions by project members, require review. We use GitHub pull requests for this purpose.
-Make sure to keep your PR (diff) small and readable. If necessary, split your contribution into multiple PRs.
-Consult [GitHub Help](https://help.github.com/articles/about-pull-requests/) for more information on using pull requests.
+## Sending a pull request
 
-After a successful code review, one of the maintainers will merge your pull request. Congratulations!
+All submissions require review via GitHub pull requests. Keep your PR diff small and readable; split into multiple PRs when sensible.
 
-## More details
+## License
 
-**No new dependencies**
-
-There is a very high bar for new dependencies, including updating to a new version of an existing dependency. We recommend to explicitly discuss this in an issue and get a green light from a maintainer, before creating a pull request that updates dependencies.
-
-## Contributor License Agreement
-
-This project welcomes contributions and suggestions.  Most contributions require you to agree to a
-Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
-the rights to use your contribution. For details, visit https://cla.opensource.microsoft.com.
-
-When you submit a pull request, a CLA bot will automatically determine whether you need to provide
-a CLA and decorate the PR appropriately (e.g., status check, comment). Simply follow the instructions
-provided by the bot. You will only need to do this once across all repos using our CLA.
-
-### Code of Conduct
-
-This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
-For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
-contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
+Apache-2.0. This project is a fork of Microsoft's `@playwright/mcp` and retains the upstream license.

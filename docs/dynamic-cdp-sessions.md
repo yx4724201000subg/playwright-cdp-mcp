@@ -1,22 +1,49 @@
 # Dynamic CDP Browser Sessions
 
-This fork publishes a patched Playwright MCP package that lets one MCP server control multiple Chromium browsers over different CDP endpoints.
+This fork of `@playwright/mcp` lets one MCP server control multiple Chromium browsers over different CDP endpoints. It works by adding an optional `browserSession` argument to every browser MCP tool.
 
 By default (when no `--cdp-endpoint`, `--endpoint`, or `--extension` is configured, and no `--browser`/`--executable-path` is explicitly requested) the server starts in **dynamic CDP mode**: it does not launch a local Chrome/Chromium and waits for per-call `browserSession.cdpEndpoint` values, connecting lazily when the first tool call for that session arrives.
 
 To opt into the legacy local-browser launch flow instead, pass `--browser` (e.g. `--browser=chrome`) or `--executable-path`. A local Chrome/Chromium is only launched in that case.
 
-Published package:
+## Install
+
+Two ways to use this fork:
+
+### Published npm package
 
 ```bash
 npx @dingmenghua/playwright-mcp-cdp-session@latest
 ```
 
-The current published version is:
+Current published version:
 
 ```text
 @dingmenghua/playwright-mcp-cdp-session@0.0.73-cdp.4
 ```
+
+### Clone this repo
+
+```bash
+git clone https://github.com/yx4724201000subg/playwright-cdp-mcp.git
+cd playwright-cdp-mcp
+npm install          # postinstall auto-builds lib/coreBundle.js
+```
+
+Then point your MCP client at the local CLI:
+
+```json
+{
+  "mcpServers": {
+    "playwright-cdp": {
+      "command": "node",
+      "args": ["/absolute/path/to/playwright-cdp-mcp/cli.js"]
+    }
+  }
+}
+```
+
+See [README.md](../README.md) for the full developer guide.
 
 ## What Changed
 
@@ -407,7 +434,7 @@ Or with a local `.env` file:
 node --env-file=.env scripts/agent-sdk-cdp-session-check.mjs
 ```
 
-This starts three CDP browsers with Playwright's bundled Chromium and lets an OpenAI Agent call the patched Playwright MCP server. A successful run prints:
+This starts three CDP browsers with Playwright's bundled Chromium and lets an OpenAI Agent call the fork's Playwright MCP server. A successful run prints:
 
 ```text
 AGENT_CDP_SESSION_OK
@@ -415,18 +442,19 @@ AGENT_CDP_SESSION_OK
 
 ## Publishing Notes
 
-The package is a lightweight wrapper around upstream Playwright MCP. The implementation patch is applied during install through:
+This fork vendors the Playwright monorepo via `git subtree` into `playwright/` and edits the MCP TypeScript sources directly. No string-replacement patches against published bundles — every change lives as TypeScript source under `playwright/packages/playwright-core/src/tools/`.
 
-```text
-postinstall -> node patches/patch-playwright-core-mcp-browser-session.js
-```
+On install, the `postinstall` hook:
 
-The patch modifies `playwright-core/lib/coreBundle.js` after dependencies are installed. This is intentionally pragmatic for private/self-use distribution. If upstream changes the bundled implementation, the patch script may need to be updated.
+1. Installs the playwright subtree's devDependencies (esbuild, ws, zod, …).
+2. Regenerates the injected script sources.
+3. Builds `lib/utilsBundle.js` + `lib/coreBundle.js` via esbuild.
 
 Before publishing a new version:
 
 ```bash
-npm pack --dry-run
+npm install           # ensure lib/ is up to date
+npm pack --dry-run    # inspect tarball contents
 npm publish --access public
 ```
 
