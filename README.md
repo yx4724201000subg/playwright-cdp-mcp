@@ -13,36 +13,7 @@ A [Model Context Protocol](https://modelcontextprotocol.io) server that provides
 
 ## For Users
 
-Two install paths: published npm package (fastest), or clone this repo (full source).
-
-### Option A — Use the published npm package (recommended)
-
-```bash
-npx @dingmenghua/playwright-mcp-cdp-session@latest
-```
-
-MCP client config (drop into VS Code / Cursor / Claude Desktop / Codex / Goose / …):
-
-```json
-{
-  "mcpServers": {
-    "playwright-cdp": {
-      "command": "npx",
-      "args": ["-y", "@dingmenghua/playwright-mcp-cdp-session@latest"]
-    }
-  }
-}
-```
-
-Codex CLI:
-
-```bash
-codex mcp add playwright-cdp -- npx -y @dingmenghua/playwright-mcp-cdp-session@latest
-```
-
-This package is a drop-in replacement for `@playwright/mcp`, so any MCP-compatible client works.
-
-### Option B — Clone this repo
+Clone and install — that's it:
 
 ```bash
 git clone https://github.com/yx4724201000subg/playwright-cdp-mcp.git
@@ -56,7 +27,7 @@ npm install
 2. Regenerates injected script sources.
 3. Builds `lib/utilsBundle.js` + `lib/coreBundle.js` via esbuild (~30 s).
 
-After that point the MCP server at your local clone:
+Then point your MCP client at the local CLI:
 
 ```json
 {
@@ -68,6 +39,8 @@ After that point the MCP server at your local clone:
   }
 }
 ```
+
+Works with any MCP-compatible client (VS Code, Cursor, Claude Desktop, Codex, Goose, …). Refer to your client's MCP documentation for where to place the config above.
 
 ### Dynamic CDP mode (default)
 
@@ -212,33 +185,12 @@ OPENAI_API_KEY=... node scripts/agent-sdk-cdp-session-check.mjs   # OpenAI Agent
 
 The Playwright monorepo inside `playwright/` has its own test suites (`npm --prefix playwright test-mcp`); this fork does not run those by default.
 
-### Publishing a new npm version
-
-The published `@dingmenghua/playwright-mcp-cdp-session` package wraps `cli.js` + `index.js` + the built bundles. Before publishing:
-
-```bash
-npm install                 # ensure lib/ is up to date
-npm pack --dry-run          # inspect tarball contents
-npm version                 # bump version (npm doesn't allow overwriting published versions)
-npm publish --access public
-```
-
-After publishing, verify from a clean directory:
-
-```bash
-tmpdir=$(mktemp -d) && cd "$tmpdir"
-npm init -y
-npm install @dingmenghua/playwright-mcp-cdp-session@latest
-./node_modules/.bin/playwright-mcp-cdp --help
-```
-
 ---
 
 ## About this fork
 
 - **Upstream:** [microsoft/playwright-mcp](https://github.com/microsoft/playwright-mcp) — full server options, configuration file schema, tools, Docker setup, programmatic usage.
 - **Subtree source:** [microsoft/playwright](https://github.com/microsoft/playwright) pinned at the commit listed in `playwright/.git` (`9ec5d7fd` at time of writing).
-- **Published npm package:** [`@dingmenghua/playwright-mcp-cdp-session`](https://www.npmjs.com/package/@dingmenghua/playwright-mcp-cdp-session)
 
 ## Security
 

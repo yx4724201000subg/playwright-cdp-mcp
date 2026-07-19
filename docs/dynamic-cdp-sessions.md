@@ -8,21 +8,7 @@ To opt into the legacy local-browser launch flow instead, pass `--browser` (e.g.
 
 ## Install
 
-Two ways to use this fork:
-
-### Published npm package
-
-```bash
-npx @dingmenghua/playwright-mcp-cdp-session@latest
-```
-
-Current published version:
-
-```text
-@dingmenghua/playwright-mcp-cdp-session@0.0.73-cdp.4
-```
-
-### Clone this repo
+Clone and install — that's it:
 
 ```bash
 git clone https://github.com/yx4724201000subg/playwright-cdp-mcp.git
@@ -82,101 +68,30 @@ If the server was started in dynamic CDP mode (the default when no remote/extens
 
 ## MCP Client Configuration
 
-Use this package instead of upstream `@playwright/mcp`:
-
-For dynamic CDP usage, keep the MCP server startup config minimal. Do not pass `--browser`, `--cdp-endpoint`, or `--executable-path` — the server defaults to dynamic CDP mode and waits for `browserSession.cdpEndpoint` in tool calls. `--headless` is harmless but has no effect in this mode (the headed/headless state is determined by the externally launched CDP browsers).
-
-Temporary/simple configuration:
+Point your MCP client at the local CLI from the cloned repo:
 
 ```json
 {
   "mcpServers": {
     "playwright-cdp": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@dingmenghua/playwright-mcp-cdp-session@latest"
-      ]
+      "command": "node",
+      "args": ["/absolute/path/to/playwright-cdp-mcp/cli.js"]
     }
   }
 }
 ```
 
-This requires no pre-install step. It is convenient for quick setup, but the first startup may be slower because `npx` can download and install the package before the MCP server starts.
+For dynamic CDP usage, keep the args minimal. Do **not** pass `--browser`, `--cdp-endpoint`, or `--executable-path` — the server defaults to dynamic CDP mode and waits for `browserSession.cdpEndpoint` in tool calls. `--headless` is harmless but has no effect in this mode (the headed/headless state is determined by the externally launched CDP browsers).
 
-Codex CLI add command:
-
-```bash
-codex mcp add playwright-cdp -- npx -y @dingmenghua/playwright-mcp-cdp-session@latest
-```
-
-Optional prewarm command for machines that use the `npx` configuration:
-
-```bash
-npx -y @dingmenghua/playwright-mcp-cdp-session@latest --help
-```
-
-Codex config template:
+Codex config template (TOML):
 
 ```toml
 [mcp_servers.playwright-cdp]
-command = "npx"
-args = ["-y", "@dingmenghua/playwright-mcp-cdp-session@latest"]
+command = "node"
+args = ["/absolute/path/to/playwright-cdp-mcp/cli.js"]
 ```
 
-If you installed the package globally, use this Codex config instead:
-
-```toml
-[mcp_servers.playwright-cdp]
-command = "playwright-mcp-cdp"
-args = []
-```
-
-Minimal `npx` configuration:
-
-```json
-{
-  "mcpServers": {
-    "playwright-cdp": {
-      "command": "npx",
-      "args": [
-        "@dingmenghua/playwright-mcp-cdp-session@latest"
-      ]
-    }
-  }
-}
-```
-
-For clients that require `-y`:
-
-```json
-{
-  "mcpServers": {
-    "playwright-cdp": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@dingmenghua/playwright-mcp-cdp-session@latest"
-      ]
-    }
-  }
-}
-```
-
-You can still pass normal Playwright MCP startup options (e.g. `--port` for HTTP transport). Dynamic CDP mode is the default as long as you do not pass `--browser`, `--cdp-endpoint`, `--endpoint`, `--extension`, or `--executable-path`:
-
-```json
-{
-  "mcpServers": {
-    "playwright-cdp": {
-      "command": "npx",
-      "args": [
-        "@dingmenghua/playwright-mcp-cdp-session@latest"
-      ]
-    }
-  }
-}
-```
+You can still pass normal Playwright MCP startup options (e.g. `--port` for HTTP transport). Dynamic CDP mode is the default as long as you do not pass `--browser`, `--cdp-endpoint`, `--endpoint`, `--extension`, or `--executable-path`.
 
 Do not pass `--cdp-endpoint` if you want dynamic per-call endpoints. Use `browserSession.cdpEndpoint` in tool calls instead. Pass `--browser=chrome` (or `--executable-path`) only if you want the legacy local-browser launch flow instead of dynamic CDP.
 
@@ -277,18 +192,15 @@ If you want to be strict, instruct the agent to never call Playwright MCP tools 
 
 ## OpenAI Agents SDK Integration
 
-When using `@openai/agents`, configure the MCP server with `MCPServerStdio`.
-
-`npx` may take more than the default MCP request timeout on its first run because it has to resolve, download, install, and run the package. Set `clientSessionTimeoutSeconds` high enough for cold starts. A value around 120 seconds is a practical default for server environments.
+When using `@openai/agents`, configure the MCP server with `MCPServerStdio` pointing at the cloned repo's `cli.js`:
 
 ```js
 import { Agent, MCPServerStdio, run } from '@openai/agents';
 
 const playwrightMcp = new MCPServerStdio({
   name: 'playwright-cdp-session',
-  command: 'npx',
-  args: ['-y', '@dingmenghua/playwright-mcp-cdp-session@latest'],
-  clientSessionTimeoutSeconds: 120,
+  command: 'node',
+  args: ['/absolute/path/to/playwright-cdp-mcp/cli.js'],
   cacheToolsList: false,
 });
 
@@ -310,61 +222,7 @@ console.log(result.finalOutput);
 await playwrightMcp.close();
 ```
 
-If you do not increase the timeout, cold `npx` starts can fail with an MCP timeout similar to:
-
-```text
-MCP error -32001: Request timed out
-```
-
-You can also prewarm the package on a host:
-
-```bash
-npx -y @dingmenghua/playwright-mcp-cdp-session@latest --help
-```
-
-For long-running servers, prefer installing the package ahead of time instead of relying on `npx @latest` during MCP startup.
-
-Global install:
-
-```bash
-npm install -g @dingmenghua/playwright-mcp-cdp-session@latest
-```
-
-MCP config after global install:
-
-```json
-{
-  "mcpServers": {
-    "playwright-cdp": {
-      "command": "playwright-mcp-cdp",
-      "args": []
-    }
-  }
-}
-```
-
-Project-local install:
-
-```bash
-npm install @dingmenghua/playwright-mcp-cdp-session@latest
-```
-
-MCP config after local install:
-
-```json
-{
-  "mcpServers": {
-    "playwright-cdp": {
-      "command": "node",
-      "args": [
-        "node_modules/@dingmenghua/playwright-mcp-cdp-session/cli.js"
-      ]
-    }
-  }
-}
-```
-
-Installed-package startup avoids the `npx` cold-start download path and is more predictable in production.
+If you plan to run the OpenAI Agents SDK validation script, see [scripts/agent-sdk-cdp-session-check.mjs](../scripts/agent-sdk-cdp-session-check.mjs).
 
 ## Validation Scripts
 
@@ -439,41 +297,3 @@ This starts three CDP browsers with Playwright's bundled Chromium and lets an Op
 ```text
 AGENT_CDP_SESSION_OK
 ```
-
-## Publishing Notes
-
-This fork vendors the Playwright monorepo via `git subtree` into `playwright/` and edits the MCP TypeScript sources directly. No string-replacement patches against published bundles — every change lives as TypeScript source under `playwright/packages/playwright-core/src/tools/`.
-
-On install, the `postinstall` hook:
-
-1. Installs the playwright subtree's devDependencies (esbuild, ws, zod, …).
-2. Regenerates the injected script sources.
-3. Builds `lib/utilsBundle.js` + `lib/coreBundle.js` via esbuild.
-
-Before publishing a new version:
-
-```bash
-npm install           # ensure lib/ is up to date
-npm pack --dry-run    # inspect tarball contents
-npm publish --access public
-```
-
-After publishing, verify install from npm:
-
-```bash
-tmpdir=$(mktemp -d)
-cd "$tmpdir"
-npm init -y
-npm install @dingmenghua/playwright-mcp-cdp-session@latest
-./node_modules/.bin/playwright-mcp-cdp --help
-```
-
-NPM does not allow overwriting an already published version. Bump the suffix for fixes:
-
-```text
-0.0.73-cdp.2
-0.0.73-cdp.3
-0.0.73-cdp.4
-```
-
-Use an npm token with package write permission and `bypass_2fa: true` for server-side publishing.
