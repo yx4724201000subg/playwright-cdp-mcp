@@ -22,6 +22,7 @@ import { createServer } from '../utils/mcp/server';
 import { packageJSON } from '../../package';
 
 import type { BrowserContext } from 'playwright';
+import type * as playwrightTypes from '../../..';
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import type { ClientInfo, ServerBackendFactory } from '../utils/mcp/server';
 import type { Config } from './config.d';
@@ -35,10 +36,17 @@ export async function createConnection(userConfig: Config = {}, contextGetter?: 
     version: packageJSON.version,
     toolSchemas: tools.map(tool => tool.schema),
     create: async (clientInfo: ClientInfo) => {
-      const browser = contextGetter
-        ? new SimpleBrowser(await contextGetter())
-        : (await createBrowserWithInfo(config, clientInfo, {})).browser;
-      const context = config.browser.isolated ? await browser.newContext(config.browser.contextOptions) : browser.contexts()[0];
+      let browser: SimpleBrowser | playwrightTypes.Browser | undefined;
+      let context: BrowserContext | undefined;
+      if (contextGetter) {
+        browser = new SimpleBrowser(await contextGetter());
+      } else {
+        const canDeferToDynamicCDP = !config.browser.remoteEndpoint && !config.browser.cdpEndpoint && !config.extension && !config.browser.explicitBrowser && !config.browser.launchOptions?.executablePath;
+        if (!canDeferToDynamicCDP)
+          browser = (await createBrowserWithInfo(config, clientInfo, {})).browser;
+      }
+      if (browser)
+        context = config.browser.isolated ? await browser.newContext(config.browser.contextOptions) : browser.contexts()[0];
       return new BrowserBackend(config, context, tools);
     },
     disposed: async () => { }

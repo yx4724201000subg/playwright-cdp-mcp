@@ -16,14 +16,14 @@ const path = require('path');
 const esbuild = require('esbuild');
 
 const ROOT = path.join(__dirname, '..');
-const PW_ROOT = path.join(ROOT, 'playwright-src');
+const PW_ROOT = path.join(ROOT, 'playwright');
 const PW_CORE = path.join(PW_ROOT, 'packages', 'playwright-core');
 const PW_CORE_SRC = path.join(PW_CORE, 'src');
 const PW_CORE_LIB = path.join(PW_CORE, 'lib');
 
 if (!fs.existsSync(PW_ROOT)) {
-  console.error(`[build:pw] playwright-src/ not found at ${PW_ROOT}`);
-  console.error(`[build:pw] Run: git clone --depth=1 https://github.com/microsoft/playwright.git ${PW_ROOT}`);
+  console.error(`[build:pw] playwright/ subtree not found at ${PW_ROOT}`);
+  console.error(`[build:pw] Run: git subtree add --prefix=playwright https://github.com/microsoft/playwright.git <commit>`);
   process.exit(1);
 }
 

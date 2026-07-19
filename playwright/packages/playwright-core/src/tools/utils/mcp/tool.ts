@@ -28,10 +28,28 @@ export type ToolSchema<Input extends z.Schema> = {
 
 export function toMcpTool(tool: ToolSchema<any>): mcpServer.Tool {
   const readOnly = tool.type === 'readOnly' || tool.type === 'assertion';
+  const inputSchema = zod.toJSONSchema(tool.inputSchema) as mcpServer.Tool['inputSchema'];
+  inputSchema.properties ??= {};
+  (inputSchema.properties as Record<string, unknown>).browserSession = {
+    type: 'object',
+    description: 'Optional browser session selector. Use this to control multiple CDP browsers from one MCP server.',
+    properties: {
+      id: {
+        type: 'string',
+        description: 'Stable browser session id, for example "chrome-a". Reuse the same id in later calls.',
+      },
+      cdpEndpoint: {
+        type: 'string',
+        description: 'CDP endpoint for the first call that creates this session, for example "http://localhost:9222".',
+      },
+    },
+    required: ['id'],
+    additionalProperties: false,
+  };
   return {
     name: tool.name,
     description: tool.description,
-    inputSchema: zod.toJSONSchema(tool.inputSchema) as mcpServer.Tool['inputSchema'],
+    inputSchema,
     annotations: {
       title: tool.title,
       readOnlyHint: readOnly,

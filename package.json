@@ -24,6 +24,7 @@
     "dtest": "MCP_IN_DOCKER=1 playwright test --project=chromium-docker",
     "build": "echo OK",
     "build:pw": "node scripts/build-pw-core.js",
+    "postinstall": "node scripts/postinstall.js",
     "npm-publish": "npm run lint && npm run test && npm publish",
     "docker-build": "docker build --no-cache -t playwright-mcp-dev:latest .",
     "docker-rm": "docker rm playwright-mcp-dev",

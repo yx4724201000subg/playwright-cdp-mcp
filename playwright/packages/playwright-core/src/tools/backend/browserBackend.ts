@@ -18,6 +18,7 @@ import debug from 'debug';
 import { Context } from './context';
 import { Response } from './response';
 import { SessionLog } from './sessionLog';
+import { playwright } from '../../inprocess';
 import type { ContextConfig } from './context';
 import type * as playwright from '../../..';
 import type { Tool } from './tool';
@@ -29,9 +30,11 @@ export class BrowserBackend implements ServerBackend {
   private _context: Context | undefined;
   private _sessionLog: SessionLog | undefined;
   private _config: ContextConfig;
-  readonly browserContext: playwright.BrowserContext;
+  private _cwd: string | undefined;
+  private _browserSessions: Map<string, BrowserSessionEntry> = new Map();
+  readonly browserContext: playwright.BrowserContext | undefined;
 
-  constructor(config: ContextConfig, browserContext: playwright.BrowserContext, tools: Tool[]) {
+  constructor(config: ContextConfig, browserContext: playwright.BrowserContext | undefined, tools: Tool[]) {
     this._config = config;
     this._tools = tools;
     this.browserContext = browserContext;
@@ -39,15 +42,60 @@ export class BrowserBackend implements ServerBackend {
 
   async initialize(clientInfo: ClientInfo): Promise<void> {
     this._sessionLog = this._config.saveSession ? await SessionLog.create(this._config, clientInfo.cwd) : undefined;
-    this._context = new Context(this.browserContext, {
+    this._cwd = clientInfo.cwd;
+    this._context = this.browserContext ? new Context(this.browserContext, {
       config: this._config,
       sessionLog: this._sessionLog,
       cwd: clientInfo.cwd,
-    });
+    }) : undefined;
   }
 
   async dispose() {
     await this._context?.dispose().catch(e => debug('pw:tools:error')(e));
+    for (const session of this._browserSessions.values()) {
+      await session.context.dispose().catch(e => debug('pw:tools:error')(e));
+      await session.browser.close().catch(e => debug('pw:tools:error')(e));
+    }
+    this._browserSessions.clear();
+  }
+
+  private async _contextForBrowserSession(browserSession: unknown): Promise<Context> {
+    if (!browserSession) {
+      if (this._context)
+        return this._context;
+      throw new Error('No default browser is available. Provide "browserSession.id" and "browserSession.cdpEndpoint" to connect to a CDP browser dynamically.');
+    }
+    if (typeof browserSession !== 'object' || Array.isArray(browserSession))
+      throw new Error('"browserSession" must be an object with an "id" field.');
+    const id = (browserSession as { id?: unknown }).id;
+    if (typeof id !== 'string' || !id)
+      throw new Error('"browserSession.id" must be a non-empty string.');
+    let session = this._browserSessions.get(id);
+    if (!session) {
+      const cdpEndpoint = (browserSession as { cdpEndpoint?: unknown }).cdpEndpoint;
+      if (typeof cdpEndpoint !== 'string' || !cdpEndpoint)
+        throw new Error(`browserSession "${id}" does not exist yet; provide "browserSession.cdpEndpoint" on the first call.`);
+      const browser = await playwright.chromium.connectOverCDP(cdpEndpoint, {
+        headers: this._config.browser.cdpHeaders,
+        timeout: this._config.browser.cdpTimeout,
+      });
+      const browserContext = browser.contexts()[0];
+      if (!browserContext) {
+        await browser.close().catch(() => {});
+        throw new Error(`CDP endpoint "${cdpEndpoint}" did not expose a browser context.`);
+      }
+      const context = new Context(browserContext, {
+        config: this._config,
+        sessionLog: this._sessionLog,
+        cwd: this._cwd!,
+      });
+      session = { id, cdpEndpoint, browser, browserContext, context };
+      this._browserSessions.set(id, session);
+    } else if (typeof (browserSession as { cdpEndpoint?: unknown }).cdpEndpoint === 'string'
+        && (browserSession as { cdpEndpoint: string }).cdpEndpoint !== session.cdpEndpoint) {
+      throw new Error(`browserSession "${id}" is already bound to ${session.cdpEndpoint}.`);
+    }
+    return session.context;
   }
 
   async callTool(name: string, rawArguments: mcpServer.CallToolRequest['params']['arguments'] & { _meta?: Record<string, any> } = {}, signal?: AbortSignal): Promise<mcpServer.CallToolResult> {
@@ -59,11 +107,14 @@ export class BrowserBackend implements ServerBackend {
     const tool = this._tools.find(tool => tool.schema.name === name)!;
     if (!tool)
       return formatError(`Tool "${name}" not found`);
+    const browserSession = (rawArguments as { browserSession?: unknown }).browserSession;
+    const toolArguments = { ...rawArguments };
+    delete (toolArguments as { browserSession?: unknown }).browserSession;
     // eslint-disable-next-line no-restricted-syntax
-    const parsedArguments = tool.schema.inputSchema.parse(rawArguments) as any;
+    const parsedArguments = tool.schema.inputSchema.parse(toolArguments) as any;
     const cwd = rawArguments._meta?.cwd;
     const raw = !!rawArguments._meta?.raw;
-    const context = this._context!;
+    const context = await this._contextForBrowserSession(browserSession);
     const response = new Response(context, name, parsedArguments, { relativeTo: cwd, raw, json });
     context.setRunningTool(name);
     let responseObject: mcpServer.CallToolResult;
@@ -81,6 +132,14 @@ export class BrowserBackend implements ServerBackend {
     }
     return responseObject;
   }
+}
+
+interface BrowserSessionEntry {
+  id: string;
+  cdpEndpoint: string;
+  browser: playwright.Browser;
+  browserContext: playwright.BrowserContext;
+  context: Context;
 }
 
 function formatRejectionReason(reason: unknown): string {

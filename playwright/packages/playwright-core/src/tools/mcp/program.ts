@@ -105,21 +105,33 @@ export function decorateMCPCommand(command: Command) {
           version,
           toolSchemas: tools.map(tool => tool.schema),
           create: async (clientInfo: ClientInfo) => {
+            const canDeferToDynamicCDP = !config.browser.remoteEndpoint && !config.browser.cdpEndpoint && !config.extension && !config.browser.explicitBrowser && !config.browser.launchOptions?.executablePath;
+            let browserContext: playwright.BrowserContext | undefined;
+            let browser: playwright.Browser | undefined;
+            let canBind = false;
+            if (canDeferToDynamicCDP) {
+              clientCount++;
+              return new BrowserBackend(config, browserContext, tools);
+            }
             if (useSharedBrowser && clientCount === 0) {
-              const { browser, canBind } = await createBrowserWithInfo(config, clientInfo, options);
-              sharedBrowser = browser;
-              if (canBind)
-                await browser.bind(clientInfo.clientName, { workspaceDir: clientInfo.cwd });
+              const { browser: browser2, canBind: canBind2 } = await createBrowserWithInfo(config, clientInfo, options);
+              sharedBrowser = browser2;
+              if (canBind2)
+                await browser2.bind(clientInfo.clientName, { workspaceDir: clientInfo.cwd });
             }
             clientCount++;
-            const { browser, canBind } = sharedBrowser ? { browser: sharedBrowser, canBind: false } : await createBrowserWithInfo(config, clientInfo, options);
+            if (sharedBrowser) {
+              browser = sharedBrowser;
+            } else {
+              ({ browser, canBind } = await createBrowserWithInfo(config, clientInfo, options));
+            }
             if (canBind) {
               const count = (clientNameCounters.get(clientInfo.clientName) ?? 0) + 1;
               clientNameCounters.set(clientInfo.clientName, count);
               const sessionName = count > 1 ? `${clientInfo.clientName} (${count})` : clientInfo.clientName;
-              await browser.bind(sessionName, { workspaceDir: clientInfo.cwd });
+              await browser!.bind(sessionName, { workspaceDir: clientInfo.cwd });
             }
-            const browserContext = config.browser.isolated ? await browser.newContext(config.browser.contextOptions) : browser.contexts()[0];
+            browserContext = config.browser.isolated ? await browser!.newContext(config.browser.contextOptions) : browser!.contexts()[0];
             return new BrowserBackend(config, browserContext, tools);
           },
           disposed: async backend => {
@@ -130,8 +142,8 @@ export function decorateMCPCommand(command: Command) {
             testDebug('close browser');
             sharedBrowser = undefined;
             const browserContext = (backend as BrowserBackend).browserContext;
-            await browserContext.close().catch(() => { });
-            await browserContext.browser()!.close().catch(() => { });
+            await browserContext?.close().catch(() => { });
+            await browserContext?.browser()?.close().catch(() => { });
           }
         };
         await mcpServer.start(factory, config.server);

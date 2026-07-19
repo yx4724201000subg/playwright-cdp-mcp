@@ -20,7 +20,7 @@ const fs = require('fs')
 const path = require('path')
 const { execSync } = require('child_process');
 
-const { tools } = require('./playwright-src/packages/playwright-core/lib/coreBundle');
+const { tools } = require('./playwright/packages/playwright-core/lib/coreBundle');
 
 const capabilities = /** @type {Record<string, string>} */ ({
   'core-navigation': 'Core automation',

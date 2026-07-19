@@ -21,35 +21,60 @@ First call for a session must include `cdpEndpoint`; later calls reuse the sessi
 
 ## Development
 
-This fork edits the Playwright MCP source directly instead of patching the
-published bundle. The vendored Playwright monorepo lives in
-`playwright-src/` (a shallow clone pinned to the commit that matches
-`playwright-core` in `package.json`). It is `.gitignore`d — every clone needs
-to materialize it locally:
+This fork vendors the Playwright monorepo via `git subtree` into the
+`playwright/` directory and edits the MCP TypeScript sources directly.
+No string-replacement patches against published bundles — every change
+lives as TypeScript source under
+`playwright/packages/playwright-core/src/`.
+
+### First-time setup
+
+Just clone and install:
 
 ```bash
-# 1. Clone this repo, then fetch the pinned Playwright commit:
 git clone https://github.com/yx4724201000subg/playwright-cdp-mcp.git
 cd playwright-cdp-mcp
-mkdir -p playwright-src
-git -C playwright-src init
-git -C playwright-src remote add origin https://github.com/microsoft/playwright.git
-git -C playwright-src fetch --depth=1 origin 9ec5d7fdb786c81ee5a4c642d8e19e7488a1fa84
-git -C playwright-src checkout FETCH_HEAD
-
-# 2. Install dependencies (this repo + playwright monorepo devDeps):
-npm install --no-audit --no-fund --ignore-scripts
-npm install --no-audit --no-fund --ignore-scripts --prefix playwright-src
-
-# 3. Regenerate injected script sources, then build the bundles:
-node playwright-src/utils/generate_injected.js
-npm run build:pw
+npm install
 ```
 
-Source edits go into `playwright-src/packages/playwright-core/src/` directly
-(no string-replacement patches). `npm run build:pw` rebuilds only
-`utilsBundle.js` + `coreBundle.js` via esbuild — the two bundles this fork
-actually ships. `index.js` and `cli.js` load those bundles via relative paths.
+`npm install` triggers a `postinstall` script that:
+
+1. Installs the playwright subtree's devDependencies (esbuild, ws, zod, …)
+   into `playwright/node_modules/`.
+2. Regenerates the injected script sources
+   (`packages/playwright-core/src/generated/*Source.ts`).
+3. Builds `lib/utilsBundle.js` + `lib/coreBundle.js` via esbuild.
+
+The bundles land in `playwright/packages/playwright-core/lib/`, which is
+`.gitignore`d. `cli.js`, `index.js`, and `update-readme.js` load them via
+relative paths.
+
+### Editing MCP source
+
+Make changes under `playwright/packages/playwright-core/src/`, then rebuild:
+
+```bash
+npm run build:pw        # rebuilds utilsBundle.js + coreBundle.js
+node cli.js --help      # smoke test
+node scripts/direct-mcp-multi-cdp-check.mjs   # end-to-end multi-CDP test
+```
+
+The TS changes this fork maintains vs upstream `microsoft/playwright`:
+
+- `src/tools/utils/mcp/tool.ts` — adds `browserSession` to every tool's input schema.
+- `src/tools/mcp/config.d.ts` + `config.ts` — adds `browser.explicitBrowser` flag.
+- `src/tools/backend/browserBackend.ts` — adds the `_browserSessions` map + lazy CDP resolver.
+- `src/tools/mcp/index.ts` — `createConnection` skips local launch in dynamic CDP mode.
+- `src/tools/mcp/program.ts` — CLI factory skips local launch in dynamic CDP mode.
+
+### Upgrading the playwright subtree
+
+```bash
+# Fetch upstream changes into the subtree
+git subtree pull --prefix=playwright https://github.com/microsoft/playwright.git <commit-or-tag> --squash
+# Re-apply the TS edits above if the upstream touched the same files.
+npm install            # re-runs postinstall → rebuild
+```
 
 ### MCP client configuration
 

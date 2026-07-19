@@ -41,6 +41,14 @@ export type Config = {
     browserName?: 'chromium' | 'firefox' | 'webkit';
 
     /**
+     * Whether the caller explicitly requested a particular browser via CLI
+     * (`--browser`) or API config. When falsey and no other launch source is
+     * configured, the server defers browser launch to per-call
+     * `browserSession.cdpEndpoint` values (dynamic CDP mode).
+     */
+    explicitBrowser?: boolean;
+
+    /**
      * Keep the browser profile in memory, do not save it to disk.
      */
     isolated?: boolean;

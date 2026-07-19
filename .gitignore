@@ -8,6 +8,13 @@ playwright-report/
 sessions/
 .playwright-mcp/
 
-# Vendored playwright monorepo (shallow clone at pinned commit).
-# Source is edited directly; lib/ is built locally by `npm run build:pw`.
-playwright-src/
+# Vendored playwright monorepo (via git subtree).
+# Track only source — ignore all build/install artifacts inside it.
+playwright/**/node_modules/
+playwright/**/lib/
+playwright/**/dist/
+playwright/**/.cache/
+playwright/packages/playwright-core/src/generated/
+playwright/packages/playwright-ct-core/src/generated/
+playwright/tests/playwright-test/stable-test-runner/node_modules/
+playwright/.commit_hash.txt

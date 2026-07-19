@@ -322,6 +322,7 @@ function configFromCLIOptions(cliOptions: CLIOptions): Config & { configFile?: s
   const config: Config = {
     browser: {
       browserName,
+      explicitBrowser: cliOptions.browser !== undefined,
       isolated: cliOptions.isolated,
       userDataDir: cliOptions.userDataDir,
       launchOptions,
