@@ -15,5 +15,5 @@
  * limitations under the License.
  */
 
-const { tools } = require('playwright-core/lib/coreBundle');
+const { tools } = require('./playwright-src/packages/playwright-core/lib/coreBundle');
 module.exports = { createConnection: tools.createConnection };

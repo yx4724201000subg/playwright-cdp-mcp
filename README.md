@@ -19,6 +19,38 @@ First call for a session must include `cdpEndpoint`; later calls reuse the sessi
 { "browserSession": { "id": "chrome-a" } }
 ```
 
+## Development
+
+This fork edits the Playwright MCP source directly instead of patching the
+published bundle. The vendored Playwright monorepo lives in
+`playwright-src/` (a shallow clone pinned to the commit that matches
+`playwright-core` in `package.json`). It is `.gitignore`d — every clone needs
+to materialize it locally:
+
+```bash
+# 1. Clone this repo, then fetch the pinned Playwright commit:
+git clone https://github.com/yx4724201000subg/playwright-cdp-mcp.git
+cd playwright-cdp-mcp
+mkdir -p playwright-src
+git -C playwright-src init
+git -C playwright-src remote add origin https://github.com/microsoft/playwright.git
+git -C playwright-src fetch --depth=1 origin 9ec5d7fdb786c81ee5a4c642d8e19e7488a1fa84
+git -C playwright-src checkout FETCH_HEAD
+
+# 2. Install dependencies (this repo + playwright monorepo devDeps):
+npm install --no-audit --no-fund --ignore-scripts
+npm install --no-audit --no-fund --ignore-scripts --prefix playwright-src
+
+# 3. Regenerate injected script sources, then build the bundles:
+node playwright-src/utils/generate_injected.js
+npm run build:pw
+```
+
+Source edits go into `playwright-src/packages/playwright-core/src/` directly
+(no string-replacement patches). `npm run build:pw` rebuilds only
+`utilsBundle.js` + `coreBundle.js` via esbuild — the two bundles this fork
+actually ships. `index.js` and `cli.js` load those bundles via relative paths.
+
 ### MCP client configuration
 
 Standard config (drop this into your MCP client's server settings):

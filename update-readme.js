@@ -20,7 +20,7 @@ const fs = require('fs')
 const path = require('path')
 const { execSync } = require('child_process');
 
-const { tools } = require('playwright-core/lib/coreBundle');
+const { tools } = require('./playwright-src/packages/playwright-core/lib/coreBundle');
 
 const capabilities = /** @type {Record<string, string>} */ ({
   'core-navigation': 'Core automation',
@@ -105,8 +105,10 @@ function formatToolForReadme(tool) {
 async function updateSection(content, startMarker, endMarker, generatedLines) {
   const startMarkerIndex = content.indexOf(startMarker);
   const endMarkerIndex = content.indexOf(endMarker);
-  if (startMarkerIndex === -1 || endMarkerIndex === -1)
-    throw new Error('Markers for generated section not found in README');
+  if (startMarkerIndex === -1 || endMarkerIndex === -1) {
+    console.warn(`Skipping section — markers not found in README: "${startMarker}"`);
+    return content;
+  }
 
   return [
     content.slice(0, startMarkerIndex + startMarker.length),

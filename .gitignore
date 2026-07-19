@@ -6,3 +6,8 @@ playwright-report/
 .DS_Store
 .env
 sessions/
+.playwright-mcp/
+
+# Vendored playwright monorepo (shallow clone at pinned commit).
+# Source is edited directly; lib/ is built locally by `npm run build:pw`.
+playwright-src/

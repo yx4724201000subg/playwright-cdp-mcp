@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-const { program } = require('playwright-core/lib/utilsBundle');
-const { tools, libCli } = require('playwright-core/lib/coreBundle');
+const { program } = require('./playwright-src/packages/playwright-core/lib/utilsBundle');
+const { tools, libCli } = require('./playwright-src/packages/playwright-core/lib/coreBundle');
 
 if (process.argv.includes('install-browser')) {
   const argv = process.argv.map(arg => arg === 'install-browser' ? 'install' : arg);
