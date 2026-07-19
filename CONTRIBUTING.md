@@ -47,14 +47,20 @@ npm install      # postinstall auto-builds the bundles
 
 ### What the fork changes vs upstream
 
-Six TS files under `playwright/packages/playwright-core/src/tools/`:
+Files under `playwright/packages/playwright-core/src/`:
 
-- `utils/mcp/tool.ts` — adds `browserSession` to every tool's input schema.
-- `mcp/config.d.ts` — declares `browser.explicitBrowser`.
-- `mcp/config.ts` — populates `explicitBrowser` from `cliOptions.browser`.
-- `backend/browserBackend.ts` — per-id `_browserSessions` map + lazy CDP resolver.
-- `mcp/index.ts` — `createConnection` skips local launch in dynamic CDP mode.
-- `mcp/program.ts` — CLI factory skips local launch in dynamic CDP mode.
+- `tools/utils/mcp/tool.ts` — adds `browserSession` (with `id` / `cdpEndpoint` / `proxy`) to every tool's input schema.
+- `tools/mcp/config.d.ts` — declares `browser.explicitBrowser`.
+- `tools/mcp/config.ts` — populates `explicitBrowser` from `cliOptions.browser`.
+- `tools/backend/browserBackend.ts` — per-id `_browserSessions` map + lazy CDP resolver; passes `browserSession.proxy` through to `connectOverCDP`.
+- `tools/mcp/index.ts` — `createConnection` skips local launch in dynamic CDP mode.
+- `tools/mcp/program.ts` — CLI factory skips local launch in dynamic CDP mode.
+- `server/transport.ts` — `WebSocketTransportOptions` accepts an optional `agent` (for SOCKS/HTTP proxies).
+- `server/chromium/chromium.ts` — `_connectOverCDPInternal` and `urlToWSEndpoint` consult `options.proxy` via `createProxyAgent`.
+- `server/browserType.ts` — `connectOverCDP` base signature accepts `proxy`.
+- `client/browserType.ts` — `_connectOverCDP` forwards `params.proxy` through the channel.
+- `types/types.d.ts` — public `ConnectOverCDPOptions` declares the new `proxy` field.
+- `utils/network.ts` (in `packages/utils`) — `HTTPRequestParams` gains an optional `agent` field.
 
 Keep these edits minimal and well-commented so they are easy to re-apply when upgrading the subtree.
 

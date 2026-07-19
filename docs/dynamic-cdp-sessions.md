@@ -175,6 +175,59 @@ Only Chromium-family browsers support CDP. Firefox and WebKit are not supported 
 
 These browsers are external to the MCP server. The MCP server itself does not need Chrome/Chromium installed locally if all browser access is done through remote CDP endpoints.
 
+## Per-Session Proxy
+
+Each session can independently tunnel its CDP traffic through a proxy. Useful when the CDP browser is only reachable via a bastion host, or when the MCP server and the browser sit on different networks.
+
+Supported `server` schemes:
+
+| Scheme | SOCKS version | DNS resolution |
+|---|---|---|
+| `socks5://` | SOCKS5 | local (overridden to proxy-side by default) |
+| `socks5h://` | SOCKS5 | proxy-side |
+| `socks4://` | SOCKS4 | local |
+| `socks4a://` | SOCKS4a | proxy-side |
+| `http://` | HTTP CONNECT | n/a |
+| `https://` | HTTPS CONNECT | n/a |
+
+Credentials can live in the URL or in the `username` / `password` fields.
+
+First call for a session (proxy + cdpEndpoint):
+
+```json
+{
+  "name": "browser_navigate",
+  "arguments": {
+    "browserSession": {
+      "id": "remote-a",
+      "cdpEndpoint": "http://10.0.0.5:9222",
+      "proxy": { "server": "socks5://user:pass@bastion.example.com:1080" }
+    },
+    "url": "https://example.com"
+  }
+}
+```
+
+Subsequent calls reuse by id only:
+
+```json
+{ "name": "browser_snapshot", "arguments": { "browserSession": { "id": "remote-a" } } }
+```
+
+### Implementation
+
+Both the HTTP `/json/version` probe and the WebSocket upgrade go through the proxy. This is implemented natively on top of Playwright's existing `createProxyAgent` (in `packages/utils/network.ts`) and the vendored `socks`/`socks-proxy-agent` libraries — **no new dependencies**. Upstream Playwright pins the WebSocket transport agent to its happy-eyeballs default and ignores proxy options on `connectOverCDP`; this fork threads the proxy through four upstream files (`server/transport.ts`, `server/chromium/chromium.ts`, `server/browserType.ts`, `client/browserType.ts`) plus `packages/utils/network.ts`.
+
+### Mixing proxied and direct sessions
+
+Sessions are independent — a proxy applies only to the session that declares it:
+
+```json
+{ "browserSession": { "id": "local-a",  "cdpEndpoint": "http://localhost:9222" } }
+{ "browserSession": { "id": "remote-b", "cdpEndpoint": "http://10.0.0.5:9222",
+                      "proxy": { "server": "socks5://bastion:1080" } } }
+```
+
 ## Agent Prompt Guidance
 
 When using an LLM agent, make the target browser explicit:
@@ -279,6 +332,18 @@ node scripts/direct-mcp-multi-cdp-check.mjs
 ```
 
 This starts four CDP browsers with Playwright's bundled Chromium, calls the MCP tools directly, and verifies snapshots do not leak content across sessions.
+
+SOCKS5-proxied CDP test:
+
+```bash
+node scripts/socks-cdp-check.mjs
+```
+
+Boots a tiny SOCKS5 server on a random localhost port that forwards to the real CDP browser port, then drives the MCP server with `browserSession.proxy = { server: 'socks5://127.0.0.1:<port>' }`. Verifies both the `/json/version` HTTP probe and the WebSocket upgrade traverse the proxy. A successful run prints:
+
+```text
+SOCKS_CDP_OK
+```
 
 OpenAI Agents SDK test:
 

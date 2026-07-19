@@ -157,7 +157,12 @@ export class BrowserType extends ChannelOwner<channels.BrowserTypeChannel> imple
       timeout: new TimeoutSettings(this._platform).timeout(params),
       isLocal: params.isLocal,
       noDefaults: params.noDefaults,
-    });
+      // [dynamic CDP fork] thread the proxy through to the server-side
+      // BrowserType.connectOverCDP implementation. The dispatcher passes
+      // `params` straight through, so a runtime-supplied proxy object is
+      // honoured even though the generated channel type does not list it.
+      ...(params.proxy ? { proxy: params.proxy } : {}),
+    } as channels.BrowserTypeConnectOverCDPParams);
     const browser = Browser.from(result.browser);
     browser._connectToBrowserType(this, {}, undefined);
     if (result.defaultContext)

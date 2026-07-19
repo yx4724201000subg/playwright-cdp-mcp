@@ -22939,6 +22939,17 @@ export interface ConnectOverCDPOptions {
    * `0` to disable timeout.
    */
   timeout?: number;
+
+  /**
+   * Network proxy to use when connecting to the CDP endpoint. Supports SOCKS5/SOCKS4 and HTTP/HTTPS proxies.
+   *
+   * Supported `server` forms:
+   * - `socks5://[user:pass@]host:port` (also `socks5h://`)
+   * - `socks4://[user@]host:port` (also `socks4a://`)
+   * - `http://[user:pass@]host:port`
+   * - `https://[user:pass@]host:port`
+   */
+  proxy?: { server: string; username?: string; password?: string; bypass?: string };
 }
 
 export interface ConnectOptions {

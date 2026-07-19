@@ -44,7 +44,8 @@ import { CRExecutionContext, createHandle } from './crExecutionContext';
 import { ConsoleMessage } from '../console';
 import { stackTraceToLocation } from './crProtocolHelper';
 
-import type { HTTPRequestParams } from '@utils/network';
+import { HTTPRequestParams, createProxyAgent } from '@utils/network';
+
 import type { BrowserOptions, BrowserProcess } from '../browser';
 import type { SdkObject } from '../instrumentation';
 import type { Progress } from '../progress';
@@ -85,7 +86,7 @@ export class Chromium extends BrowserType {
     return await this._connectOverCDPInternal(progress, endpointURL, options);
   }
 
-  async _connectOverCDPInternal(progress: Progress, endpointURL: string, options: types.LaunchOptions & { headers?: types.HeadersArray, isLocal?: boolean, noDefaults?: boolean }, onClose?: () => Promise<void>) {
+  async _connectOverCDPInternal(progress: Progress, endpointURL: string, options: types.LaunchOptions & { headers?: types.HeadersArray, isLocal?: boolean, noDefaults?: boolean, proxy?: types.ProxySettings }, onClose?: () => Promise<void>) {
     let headersMap: { [key: string]: string; } | undefined;
     if (options.headers)
       headersMap = headersArrayToObject(options.headers, false);
@@ -99,11 +100,18 @@ export class Chromium extends BrowserType {
     if (channel)
       endpointURL = await resolveChannelEndpoint(progress, endpointURL);
 
+    // [dynamic CDP fork] when the caller supplies a proxy (socks5/socks4/
+    // http/https), build a Playwright-native proxy agent and thread it
+    // through both the HTTP /json/version probe and the WebSocket upgrade.
+    // upstream playwright pins the transport agent to happy-eyeballs and
+    // ignores proxy options on connectOverCDP, so we hook in here.
+    const proxyAgent = options.proxy ? createProxyAgent(options.proxy, new URL(endpointURL)) : undefined;
+
     let wsEndpoint: string;
     let chromeTransport: WebSocketTransport;
     try {
-      wsEndpoint = await urlToWSEndpoint(progress, endpointURL, headersMap);
-      chromeTransport = await WebSocketTransport.connect(progress, wsEndpoint, { headers: headersMap, followRedirects: true, debugLogHeader: 'x-playwright-debug-log' });
+      wsEndpoint = await urlToWSEndpoint(progress, endpointURL, headersMap, proxyAgent);
+      chromeTransport = await WebSocketTransport.connect(progress, wsEndpoint, { headers: headersMap, followRedirects: true, debugLogHeader: 'x-playwright-debug-log', agent: proxyAgent });
     } catch (e) {
       if (channel)
         throw new Error(`Could not connect to ${channel}.\n${remoteDebuggingHint(channel)}`);
@@ -448,7 +456,7 @@ export async function waitForReadyState(options: types.LaunchOptions, browserLog
   return result;
 }
 
-async function urlToWSEndpoint(progress: Progress, endpointURL: string, headers: { [key: string]: string; }) {
+async function urlToWSEndpoint(progress: Progress, endpointURL: string, headers: { [key: string]: string; }, proxyAgent?: http.Agent) {
   if (endpointURL.startsWith('ws'))
     return endpointURL;
   progress.log(`<ws preparing> retrieving websocket url from ${endpointURL}`);
@@ -458,10 +466,9 @@ async function urlToWSEndpoint(progress: Progress, endpointURL: string, headers:
   url.pathname += 'json/version/';
   const httpURL = url.toString();
 
-  const json = await fetchData(progress, {
-    url: httpURL,
-    headers,
-  }, async (_, resp) => new Error(`Unexpected status ${resp.statusCode} when connecting to ${httpURL}.\n` +
+  const fetchDataParams: HTTPRequestParams = { url: httpURL, headers, agent: proxyAgent };
+
+  const json = await fetchData(progress, fetchDataParams, async (_, resp) => new Error(`Unexpected status ${resp.statusCode} when connecting to ${httpURL}.\n` +
     `This does not look like a DevTools server, try connecting via ws://.`)
   );
   return JSON.parse(json).webSocketDebuggerUrl;

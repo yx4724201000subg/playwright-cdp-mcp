@@ -75,10 +75,15 @@ export class BrowserBackend implements ServerBackend {
       const cdpEndpoint = (browserSession as { cdpEndpoint?: unknown }).cdpEndpoint;
       if (typeof cdpEndpoint !== 'string' || !cdpEndpoint)
         throw new Error(`browserSession "${id}" does not exist yet; provide "browserSession.cdpEndpoint" on the first call.`);
+      // [dynamic CDP fork] optional SOCKS5/SOCKS4/HTTP proxy for the CDP
+      // connection. Passed through to playwright's createProxyAgent, which
+      // already understands all supported schemes.
+      const proxy = (browserSession as { proxy?: unknown }).proxy;
       const browser = await playwright.chromium.connectOverCDP(cdpEndpoint, {
         headers: this._config.browser.cdpHeaders,
         timeout: this._config.browser.cdpTimeout,
-      });
+        ...(proxy ? { proxy: proxy as { server: string; username?: string; password?: string; bypass?: string } } : {}),
+      } as any);
       const browserContext = browser.contexts()[0];
       if (!browserContext) {
         await browser.close().catch(() => {});

@@ -42,6 +42,21 @@ export function toMcpTool(tool: ToolSchema<any>): mcpServer.Tool {
         type: 'string',
         description: 'CDP endpoint for the first call that creates this session, for example "http://localhost:9222".',
       },
+      proxy: {
+        type: 'object',
+        description: 'Optional proxy tunneled to the CDP endpoint. Supports SOCKS5/SOCKS4 and HTTP/HTTPS proxies.',
+        properties: {
+          server: {
+            type: 'string',
+            description: 'Proxy URL, e.g. "socks5://user:pass@host:port", "socks4://host:port", "http://host:port".',
+          },
+          username: { type: 'string', description: 'Optional username (when not embedded in `server`).' },
+          password: { type: 'string', description: 'Optional password (when not embedded in `server`).' },
+          bypass: { type: 'string', description: 'Optional comma-separated list of hosts to bypass the proxy.' },
+        },
+        required: ['server'],
+        additionalProperties: false,
+      },
     },
     required: ['id'],
     additionalProperties: false,

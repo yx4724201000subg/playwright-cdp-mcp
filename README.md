@@ -9,6 +9,16 @@ A [Model Context Protocol](https://modelcontextprotocol.io) server that provides
 { "browserSession": { "id": "chrome-a" } }
 ```
 
+Each session can also tunnel through a SOCKS5/SOCKS4/HTTP proxy — handy when the CDP browser is reachable only via a bastion host:
+
+```json
+{ "browserSession": {
+    "id": "remote-a",
+    "cdpEndpoint": "http://10.0.0.5:9222",
+    "proxy": { "server": "socks5://user:pass@bastion.example.com:1080" }
+} }
+```
+
 ---
 
 ## For Users
@@ -59,6 +69,21 @@ Later calls — reuse by id only:
 ```
 
 If a tool call omits `browserSession` while in dynamic CDP mode, the call fails with an explicit error telling the client to provide `browserSession.id` and `browserSession.cdpEndpoint`.
+
+### Per-session proxy
+
+Each session can independently tunnel its CDP traffic through a proxy. Supported schemes: `socks5`, `socks5h`, `socks4`, `socks4a`, `http`, `https`. Credentials may live in the URL or in `username`/`password`.
+
+```json
+{ "browserSession": {
+    "id": "remote-a",
+    "cdpEndpoint": "http://10.0.0.5:9222",
+    "proxy": { "server": "socks5://user:pass@bastion.example.com:1080" }
+} }
+{ "browserSession": { "id": "remote-a" } }
+```
+
+Both the HTTP `/json/version` probe and the WebSocket upgrade go through the proxy. This is implemented natively on top of Playwright's existing `createProxyAgent` — no new dependencies, no local TCP forwarder hack.
 
 ### Legacy local-browser mode (opt-in)
 
@@ -141,16 +166,22 @@ Want watch mode? See `scripts/build-pw-core.js` — it uses esbuild directly, so
 
 ### What this fork changes vs upstream
 
-Six TypeScript files under `playwright/packages/playwright-core/src/tools/`:
+Files under `playwright/packages/playwright-core/src/`:
 
 | File | Change |
 |---|---|
-| `utils/mcp/tool.ts` | Adds the optional `browserSession` property to every tool's input schema. |
-| `mcp/config.d.ts` | Declares `browser.explicitBrowser` on the `Config` type. |
-| `mcp/config.ts` | Populates `explicitBrowser` from `cliOptions.browser`. |
-| `backend/browserBackend.ts` | Adds a per-id `_browserSessions` map + `_contextForBrowserSession()` resolver; the default context is now optional and lazily supplied via `browserSession.cdpEndpoint`. |
-| `mcp/index.ts` | `createConnection` no longer launches a local browser when in dynamic CDP mode. |
-| `mcp/program.ts` | CLI factory skips local browser launch in dynamic CDP mode; tolerates undefined `browserContext` on dispose. |
+| `tools/utils/mcp/tool.ts` | Adds the optional `browserSession` property (with `id` / `cdpEndpoint` / `proxy`) to every tool's input schema. |
+| `tools/mcp/config.d.ts` | Declares `browser.explicitBrowser` on the `Config` type. |
+| `tools/mcp/config.ts` | Populates `explicitBrowser` from `cliOptions.browser`. |
+| `tools/backend/browserBackend.ts` | Adds a per-id `_browserSessions` map + `_contextForBrowserSession()` resolver; passes `browserSession.proxy` through to `connectOverCDP`. |
+| `tools/mcp/index.ts` | `createConnection` no longer launches a local browser when in dynamic CDP mode. |
+| `tools/mcp/program.ts` | CLI factory skips local browser launch in dynamic CDP mode; tolerates undefined `browserContext` on dispose. |
+| `server/transport.ts` | `WebSocketTransportOptions` gains an optional `agent` field, used for the underlying `ws` upgrade. |
+| `server/chromium/chromium.ts` | `_connectOverCDPInternal` + `urlToWSEndpoint` consult `options.proxy` via `createProxyAgent` and thread the agent through both the HTTP probe and the WebSocket transport. |
+| `server/browserType.ts` | `connectOverCDP` base signature accepts a `proxy` option. |
+| `client/browserType.ts` | `_connectOverCDP` forwards `params.proxy` through the channel. |
+| `types/types.d.ts` | Public `ConnectOverCDPOptions` declares the new `proxy` field. |
+| `utils/network.ts` (in `packages/utils`) | `HTTPRequestParams` gains an optional `agent` field; `httpRequest` prefers it over `proxy-from-env`. |
 
 To see the exact diff against the pinned upstream commit:
 

@@ -87,6 +87,6 @@
   - `npm run build:pw` — 重建 bundle（esbuild 秒级）。
   - `node scripts/direct-mcp-multi-cdp-check.mjs` — 端到端多 CDP 验证，应输出 `DIRECT_MULTI_CDP_OK`。
   - `npm run lint` — 从 bundle 抽取工具元数据刷新 README。
-- 本 fork vs 上游的 TS 改动集中在 6 个文件（见 [CONTRIBUTING.md](CONTRIBUTING.md)），改动必须保持精简、有注释，方便 subtree 升级时 rebase。
+- 本 fork vs 上游的 TS 改动集中在 `playwright/packages/playwright-core/src/` 和 `playwright/packages/utils/network.ts`（见 [CONTRIBUTING.md](CONTRIBUTING.md) 的完整文件清单），改动必须保持精简、有注释，方便 subtree 升级时 rebase。
 - 禁止在代码中添加注释，除非用户明确要求。但本 fork 维护的 6 个 TS 改动属于例外 —— 它们标记了 "dynamic CDP" 的关键逻辑，必须保留注释。
 - 遵循仓库现有代码风格与约定。

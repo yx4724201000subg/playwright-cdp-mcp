@@ -16,6 +16,7 @@
  */
 
 import ws from 'ws';
+import type { Agent } from 'http';
 import { httpHappyEyeballsAgent, httpsHappyEyeballsAgent } from '@utils/happyEyeballs';
 import { makeWaitForNextTask } from '@utils/task';
 import type { WebSocket } from 'ws';
@@ -63,6 +64,11 @@ type WebSocketTransportOptions = {
   headers?: { [key: string]: string; };
   followRedirects?: boolean;
   debugLogHeader?: string;
+  // [dynamic CDP fork] Optional http.Agent to use for the underlying ws
+  // upgrade. When set (e.g. a SocksProxyAgent for socks5 proxies), it
+  // overrides the default happy-eyeballs agent. upstream playwright pins
+  // the agent, so we thread the override through here.
+  agent?: Agent;
 };
 
 export class WebSocketTransport implements ConnectionTransport {
@@ -137,7 +143,9 @@ export class WebSocketTransport implements ConnectionTransport {
       maxPayload: 256 * 1024 * 1024, // 256Mb,
       headers: options.headers,
       followRedirects: options.followRedirects,
-      agent: (/^(https|wss):\/\//.test(url)) ? httpsHappyEyeballsAgent : httpHappyEyeballsAgent,
+      // [dynamic CDP fork] prefer caller-supplied agent (socks/http proxy);
+      // fall back to the default happy-eyeballs agent otherwise.
+      agent: options.agent ?? (/^(https|wss):\/\//.test(url) ? httpsHappyEyeballsAgent : httpHappyEyeballsAgent),
       perMessageDeflate,
     });
     this._ws.on('upgrade', response => {

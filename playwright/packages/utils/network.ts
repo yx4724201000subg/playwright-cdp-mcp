@@ -41,6 +41,9 @@ export type HTTPRequestParams = {
   data?: string | Buffer,
   rejectUnauthorized?: boolean,
   socketTimeout?: number,
+  // [dynamic CDP fork] optional caller-supplied agent (e.g. SocksProxyAgent).
+  // Takes precedence over the happy-eyeballs default and proxy-from-env.
+  agent?: http.Agent,
 };
 
 export const NET_DEFAULT_TIMEOUT = 30_000;
@@ -54,14 +57,20 @@ export function httpRequest(params: HTTPRequestParams, onResponse: (r: http.Inco
   if (params.rejectUnauthorized !== undefined)
     options.rejectUnauthorized = params.rejectUnauthorized;
 
-  const proxyURL = getProxyForUrl(params.url);
-  if (proxyURL) {
-    const parsedProxyURL = normalizeProxyURL(proxyURL);
-    if (params.url.startsWith('http:')) {
-      options.path = url.toString();
-      url = parsedProxyURL;
-    } else {
-      options.agent = new HttpsProxyAgent(parsedProxyURL);
+  // [dynamic CDP fork] honour an explicitly-supplied agent first; otherwise
+  // fall back to the upstream proxy-from-env + happy-eyeballs behaviour.
+  if (params.agent) {
+    options.agent = params.agent;
+  } else {
+    const proxyURL = getProxyForUrl(params.url);
+    if (proxyURL) {
+      const parsedProxyURL = normalizeProxyURL(proxyURL);
+      if (params.url.startsWith('http:')) {
+        options.path = url.toString();
+        url = parsedProxyURL;
+      } else {
+        options.agent = new HttpsProxyAgent(parsedProxyURL);
+      }
     }
   }
 
