@@ -634,6 +634,15 @@ scheme.BrowserTypeConnectOverCDPParams = tObject({
   timeout: tFloat,
   isLocal: tOptional(tBoolean),
   noDefaults: tOptional(tBoolean),
+  // [dynamic CDP fork] allow caller-supplied proxy (socks5/http) to reach
+  // CDP endpoints behind a bastion. Without this the validator silently
+  // strips the field during message deserialization.
+  proxy: tOptional(tObject({
+    server: tString,
+    username: tOptional(tString),
+    password: tOptional(tString),
+    bypass: tOptional(tString),
+  })),
 });
 scheme.BrowserTypeConnectOverCDPResult = tObject({
   browser: tChannel(['Browser']),
